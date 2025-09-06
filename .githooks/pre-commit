@@ -1,0 +1,18 @@
+#!/bin/bash
+# Pre-commit hook to remind about AI logging compliance
+
+echo "🔍 Checking AI logging compliance..."
+if [ -f ".ai/log.jsonl" ]; then
+    echo "✅ AI log file exists"
+    # Check if recent entries exist
+    if [ -s ".ai/log.jsonl" ]; then
+        echo "✅ AI log has entries"
+    else
+        echo "⚠️  AI log is empty - remember to log your steps!"
+    fi
+else
+    echo "⚠️  AI log file missing - remember to log your steps!"
+fi
+
+echo "📋 Remember: Log every AI step using scripts/ai_log.sh"
+echo "📋 Create daily summary at logs/ai/\$(date +%F).md"

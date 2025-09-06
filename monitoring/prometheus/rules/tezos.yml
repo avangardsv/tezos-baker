@@ -1,0 +1,170 @@
+groups:
+  - name: tezos_node_alerts
+    rules:
+      - alert: TezosNodeDown
+        expr: up{job="tezos-node"} == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Tezos node is down"
+          description: "Tezos node has been down for more than 1 minute."
+
+      - alert: TezosNodeHighHeadLag
+        expr: (tezos_node_network_head_level - tezos_node_local_head_level) > 10
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Tezos node head lag is high"
+          description: "Node is lagging {{ $value }} blocks behind network head for more than 5 minutes."
+
+      - alert: TezosNodeCriticalHeadLag  
+        expr: (tezos_node_network_head_level - tezos_node_local_head_level) > 50
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Tezos node head lag is critically high"
+          description: "Node is lagging {{ $value }} blocks behind network head for more than 2 minutes."
+
+      - alert: TezosNodeLowPeerCount
+        expr: tezos_node_peer_count < 5
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Tezos node has low peer count"
+          description: "Node has only {{ $value }} peers connected for more than 10 minutes."
+
+      - alert: TezosNodeNoPeers
+        expr: tezos_node_peer_count == 0
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Tezos node has no peers"
+          description: "Node has no peers connected for more than 2 minutes."
+
+      - alert: TezosNodeNotBootstrapped
+        expr: tezos_node_bootstrapped == 0
+        for: 30m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Tezos node is not bootstrapped"
+          description: "Node has not been bootstrapped for more than 30 minutes."
+
+  - name: tezos_baker_alerts
+    rules:
+      - alert: TezosBakerDown
+        expr: up{job="tezos-baker"} == 0 or absent(up{job="tezos-baker"})
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Tezos baker is down"
+          description: "Tezos baker process has been down for more than 5 minutes."
+
+      - alert: TezosEndorserDown
+        expr: up{job="tezos-endorser"} == 0 or absent(up{job="tezos-endorser"})
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Tezos endorser is down"
+          description: "Tezos endorser process has been down for more than 5 minutes."
+
+      - alert: TezosBakerMissedBaking
+        expr: increase(tezos_baker_missed_baking_slots[1h]) > 0
+        for: 0m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Tezos baker missed baking slots"
+          description: "Baker has missed {{ $value }} baking slots in the last hour."
+
+      - alert: TezosBakerMissedEndorsing
+        expr: increase(tezos_baker_missed_endorsing_slots[1h]) > 2
+        for: 0m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Tezos baker missed endorsing slots"
+          description: "Baker has missed {{ $value }} endorsing slots in the last hour."
+
+  - name: system_alerts
+    rules:
+      - alert: HighCPUUsage
+        expr: 100 - (avg by(instance) (irate(node_cpu_seconds_total{mode="idle"}[5m])) * 100) > 80
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High CPU usage"
+          description: "CPU usage is above 80% for more than 5 minutes: {{ $value }}%"
+
+      - alert: HighMemoryUsage
+        expr: (1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)) * 100 > 85
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High memory usage"
+          description: "Memory usage is above 85% for more than 5 minutes: {{ $value }}%"
+
+      - alert: LowDiskSpace
+        expr: (1 - (node_filesystem_avail_bytes{fstype!="tmpfs"} / node_filesystem_size_bytes{fstype!="tmpfs"})) * 100 > 85
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Low disk space"
+          description: "Disk usage is above 85% for more than 5 minutes: {{ $value }}%"
+
+      - alert: CriticalDiskSpace
+        expr: (1 - (node_filesystem_avail_bytes{fstype!="tmpfs"} / node_filesystem_size_bytes{fstype!="tmpfs"})) * 100 > 95
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Critical disk space"
+          description: "Disk usage is above 95%: {{ $value }}%"
+
+      - alert: HighNetworkErrors
+        expr: rate(node_network_receive_errs_total[5m]) > 10
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High network errors"
+          description: "Network interface {{ $labels.device }} has high error rate: {{ $value }} errors/sec"
+
+  - name: docker_alerts
+    rules:
+      - alert: ContainerDown
+        expr: absent(up{job=~"tezos-.*"})
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Tezos container is down"
+          description: "Container {{ $labels.job }} is not responding."
+
+      - alert: ContainerHighMemory
+        expr: (container_memory_usage_bytes / container_spec_memory_limit_bytes) > 0.9
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Container high memory usage"
+          description: "Container {{ $labels.name }} memory usage is above 90%: {{ $value }}%"
+
+      - alert: ContainerRestarting
+        expr: rate(container_start_time_seconds[10m]) > 0
+        for: 0m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Container restarting"
+          description: "Container {{ $labels.name }} has been restarting frequently."

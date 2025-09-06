@@ -1,0 +1,478 @@
+name: Tezos Baker Sanity Checks
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+  schedule:
+    # Run daily sanity checks
+    - cron: '0 6 * * *'
+
+env:
+  COMPOSE_FILE_GHOSTNET: docker/compose.ghostnet.yml
+  COMPOSE_FILE_MAINNET: docker/compose.mainnet.yml
+
+jobs:
+  validate-configuration:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Set up environment
+        run: |
+          # Create required directories
+          mkdir -p data logs backups
+          
+          # Copy environment template
+          cp .env.example .env
+          
+      - name: Validate environment template
+        run: |
+          echo "Validating .env.example file..."
+          
+          # Check for required variables
+          required_vars=(
+            "TEZOS_NETWORK"
+            "OCTEZ_VERSION"
+            "DATA_DIR"
+            "P2P_PORT"
+            "RPC_PORT"
+            "BAKER_ALIAS"
+            "GRAFANA_ADMIN"
+            "GRAFANA_PASS"
+          )
+          
+          for var in "${required_vars[@]}"; do
+            if ! grep -q "^${var}=" .env.example; then
+              echo "ERROR: Required variable $var not found in .env.example"
+              exit 1
+            fi
+          done
+          
+          echo "✓ All required environment variables present"
+          
+      - name: Validate Docker Compose files
+        run: |
+          echo "Validating Docker Compose configurations..."
+          
+          # Validate Ghostnet compose file
+          docker compose -f $COMPOSE_FILE_GHOSTNET config > /dev/null
+          echo "✓ Ghostnet compose file is valid"
+          
+          # Validate Mainnet compose file  
+          docker compose -f $COMPOSE_FILE_MAINNET config > /dev/null
+          echo "✓ Mainnet compose file is valid"
+          
+      - name: Check Docker network configuration
+        run: |
+          echo "Checking Docker network configuration..."
+          
+          # Check for network definitions
+          if ! grep -q "networks:" $COMPOSE_FILE_GHOSTNET; then
+            echo "ERROR: No networks defined in Ghostnet compose"
+            exit 1
+          fi
+          
+          if ! grep -q "networks:" $COMPOSE_FILE_MAINNET; then
+            echo "ERROR: No networks defined in Mainnet compose"
+            exit 1
+          fi
+          
+          echo "✓ Network configurations are present"
+          
+      - name: Validate configuration files
+        run: |
+          echo "Validating Tezos configuration files..."
+          
+          # Check JSON syntax for config files
+          for config in config/*.json; do
+            if [ -f "$config" ]; then
+              echo "Checking $config..."
+              jq empty "$config" || {
+                echo "ERROR: Invalid JSON in $config"
+                exit 1
+              }
+            fi
+          done
+          
+          echo "✓ All configuration files are valid JSON"
+
+  validate-scripts:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Install shellcheck
+        run: sudo apt-get update && sudo apt-get install -y shellcheck
+        
+      - name: Lint shell scripts
+        run: |
+          echo "Linting shell scripts..."
+          
+          # Find all shell scripts
+          scripts=$(find . -name "*.sh" -type f)
+          
+          if [ -z "$scripts" ]; then
+            echo "No shell scripts found"
+            exit 0
+          fi
+          
+          # Lint each script
+          for script in $scripts; do
+            echo "Checking $script..."
+            shellcheck "$script" || exit 1
+          done
+          
+          echo "✓ All shell scripts pass linting"
+          
+      - name: Check script permissions
+        run: |
+          echo "Checking script permissions..."
+          
+          # Check that scripts are executable
+          scripts=$(find scripts/ -name "*.sh" -type f 2>/dev/null || echo "")
+          
+          for script in $scripts; do
+            if [ ! -x "$script" ]; then
+              echo "ERROR: Script $script is not executable"
+              exit 1
+            fi
+          done
+          
+          echo "✓ All scripts have correct permissions"
+          
+      - name: Validate logging integration
+        run: |
+          echo "Validating logging integration..."
+          
+          # Check that scripts source logging library
+          scripts=$(find scripts/ -name "*.sh" -not -path "scripts/lib/*" -type f 2>/dev/null || echo "")
+          
+          for script in $scripts; do
+            if [ -f "$script" ] && ! grep -q "source.*lib/log.sh" "$script"; then
+              echo "WARNING: Script $script may not use logging library"
+            fi
+          done
+          
+          echo "✓ Logging integration checked"
+
+  validate-monitoring:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Install monitoring tools
+        run: |
+          # Install promtool for Prometheus config validation
+          wget https://github.com/prometheus/prometheus/releases/latest/download/prometheus-2.47.0.linux-amd64.tar.gz
+          tar xzf prometheus-2.47.0.linux-amd64.tar.gz
+          sudo mv prometheus-2.47.0.linux-amd64/promtool /usr/local/bin/
+          
+      - name: Validate Prometheus configuration
+        run: |
+          echo "Validating Prometheus configuration..."
+          
+          if [ -f monitoring/prometheus/prometheus.yml ]; then
+            promtool check config monitoring/prometheus/prometheus.yml
+            echo "✓ Prometheus configuration is valid"
+          else
+            echo "ERROR: Prometheus configuration not found"
+            exit 1
+          fi
+          
+      - name: Validate Prometheus rules
+        run: |
+          echo "Validating Prometheus rules..."
+          
+          if [ -d monitoring/prometheus/rules ]; then
+            for rule_file in monitoring/prometheus/rules/*.yml; do
+              if [ -f "$rule_file" ]; then
+                echo "Checking $rule_file..."
+                promtool check rules "$rule_file"
+              fi
+            done
+            echo "✓ All Prometheus rules are valid"
+          else
+            echo "WARNING: No Prometheus rules directory found"
+          fi
+          
+      - name: Validate Alertmanager configuration
+        run: |
+          echo "Validating Alertmanager configuration..."
+          
+          if [ -f monitoring/alertmanager/alertmanager.yml ]; then
+            # Basic YAML syntax check
+            python3 -c "import yaml; yaml.safe_load(open('monitoring/alertmanager/alertmanager.yml'))"
+            echo "✓ Alertmanager configuration is valid YAML"
+          else
+            echo "ERROR: Alertmanager configuration not found"
+            exit 1
+          fi
+          
+      - name: Validate Grafana configuration
+        run: |
+          echo "Validating Grafana configuration..."
+          
+          # Check datasource configuration
+          if [ -f monitoring/grafana/datasources/prometheus.yml ]; then
+            python3 -c "import yaml; yaml.safe_load(open('monitoring/grafana/datasources/prometheus.yml'))"
+            echo "✓ Grafana datasource configuration is valid"
+          fi
+          
+          # Check dashboard JSON
+          if [ -f monitoring/grafana/dashboards/tezos-baker.json ]; then
+            jq empty monitoring/grafana/dashboards/tezos-baker.json
+            echo "✓ Grafana dashboard is valid JSON"
+          fi
+
+  security-checks:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Check for hardcoded secrets
+        run: |
+          echo "Scanning for hardcoded secrets..."
+          
+          # List of patterns that might indicate secrets
+          patterns=(
+            "password.*="
+            "secret.*="
+            "key.*="
+            "token.*="
+            "api_key.*="
+            "private_key.*="
+          )
+          
+          for pattern in "${patterns[@]}"; do
+            # Search for patterns but exclude example files and comments
+            matches=$(grep -r -i "$pattern" . \
+              --exclude-dir=.git \
+              --exclude="*.example" \
+              --exclude="*.md" \
+              | grep -v "#" | grep -v "//" || echo "")
+            
+            if [ -n "$matches" ]; then
+              echo "WARNING: Potential secret found with pattern '$pattern':"
+              echo "$matches"
+            fi
+          done
+          
+          echo "✓ Secret scanning completed"
+          
+      - name: Check file permissions
+        run: |
+          echo "Checking file permissions..."
+          
+          # Check for overly permissive files
+          permissive_files=$(find . -type f -perm /o+w 2>/dev/null | grep -v ".git" || echo "")
+          
+          if [ -n "$permissive_files" ]; then
+            echo "WARNING: World-writable files found:"
+            echo "$permissive_files"
+          fi
+          
+          echo "✓ File permissions checked"
+          
+      - name: Validate security documentation
+        run: |
+          echo "Validating security documentation..."
+          
+          required_security_docs=(
+            "security/hardening_checklist.md"
+            "security/ufw_rules.md"
+            "security/remote_signer_ledger.md"
+          )
+          
+          for doc in "${required_security_docs[@]}"; do
+            if [ ! -f "$doc" ]; then
+              echo "ERROR: Required security document $doc not found"
+              exit 1
+            fi
+          done
+          
+          echo "✓ All required security documentation present"
+
+  integration-tests:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Set up test environment
+        run: |
+          # Create test environment
+          mkdir -p test-data test-logs
+          cp .env.example .env
+          
+          # Override for testing
+          sed -i 's/TEZOS_NETWORK=ghostnet/TEZOS_NETWORK=ghostnet/' .env
+          sed -i 's|DATA_DIR=./data|DATA_DIR=./test-data|' .env
+          sed -i 's|LOG_DIR=./logs|LOG_DIR=./test-logs|' .env
+          
+      - name: Test Docker Compose startup (dry-run)
+        run: |
+          echo "Testing Docker Compose startup..."
+          
+          # Test Ghostnet configuration
+          docker compose -f $COMPOSE_FILE_GHOSTNET config --quiet
+          echo "✓ Ghostnet compose config validates"
+          
+          # Test Mainnet configuration  
+          docker compose -f $COMPOSE_FILE_MAINNET config --quiet
+          echo "✓ Mainnet compose config validates"
+          
+      - name: Test script execution (syntax)
+        run: |
+          echo "Testing script syntax..."
+          
+          # Test scripts for syntax errors
+          scripts=$(find scripts/ -name "*.sh" -type f 2>/dev/null || echo "")
+          
+          for script in $scripts; do
+            if [ -f "$script" ]; then
+              echo "Testing syntax of $script..."
+              bash -n "$script" || {
+                echo "ERROR: Syntax error in $script"
+                exit 1
+              }
+            fi
+          done
+          
+          echo "✓ All scripts have valid syntax"
+          
+      - name: Test logging system
+        run: |
+          echo "Testing logging system..."
+          
+          if [ -f scripts/test_logging.sh ]; then
+            # Make script executable and run test
+            chmod +x scripts/test_logging.sh
+            ./scripts/test_logging.sh
+            echo "✓ Logging system test passed"
+          else
+            echo "WARNING: Logging test script not found"
+          fi
+
+  documentation-checks:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Check documentation completeness
+        run: |
+          echo "Checking documentation completeness..."
+          
+          required_docs=(
+            "README.md"
+            "docs/tezos-baker/README.md"
+            "docs/tezos-baker/CONTRIBUTING.md"
+            "docs/tezos-baker/SECURITY.md"
+            "docs/tezos-baker/MONITORING.md"
+          )
+          
+          for doc in "${required_docs[@]}"; do
+            if [ ! -f "$doc" ]; then
+              echo "ERROR: Required documentation $doc not found"
+              exit 1
+            fi
+            
+            # Check if file is not empty
+            if [ ! -s "$doc" ]; then
+              echo "ERROR: Documentation file $doc is empty"
+              exit 1
+            fi
+          done
+          
+          echo "✓ All required documentation is present"
+          
+      - name: Validate markdown syntax
+        run: |
+          echo "Validating markdown syntax..."
+          
+          # Install markdown linter
+          npm install -g markdownlint-cli
+          
+          # Lint markdown files
+          markdownlint docs/ security/ || echo "WARNING: Markdown linting issues found"
+          
+          echo "✓ Markdown validation completed"
+
+  deployment-readiness:
+    runs-on: ubuntu-latest
+    needs: [validate-configuration, validate-scripts, validate-monitoring, security-checks, integration-tests]
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Check deployment readiness
+        run: |
+          echo "Checking deployment readiness..."
+          
+          # Verify all critical components exist
+          critical_components=(
+            ".env.example"
+            "docker/compose.ghostnet.yml"
+            "docker/compose.mainnet.yml"
+            "docker/octez.Dockerfile"
+            "scripts/import_snapshot.sh"
+            "scripts/check_sync.sh"
+            "scripts/register_delegate.sh"
+            "scripts/start_baker.sh"
+            "monitoring/prometheus/prometheus.yml"
+            "monitoring/grafana/dashboards/tezos-baker.json"
+          )
+          
+          missing_components=0
+          
+          for component in "${critical_components[@]}"; do
+            if [ ! -f "$component" ]; then
+              echo "ERROR: Critical component missing: $component"
+              missing_components=$((missing_components + 1))
+            fi
+          done
+          
+          if [ $missing_components -eq 0 ]; then
+            echo "✅ All critical components present - deployment ready!"
+          else
+            echo "❌ $missing_components critical components missing - deployment not ready"
+            exit 1
+          fi
+          
+      - name: Generate deployment summary
+        run: |
+          echo "=== Tezos Baker Deployment Summary ===" > deployment-summary.txt
+          echo "Date: $(date)" >> deployment-summary.txt
+          echo "Commit: $GITHUB_SHA" >> deployment-summary.txt
+          echo "" >> deployment-summary.txt
+          echo "✅ Configuration validation: PASSED" >> deployment-summary.txt
+          echo "✅ Script validation: PASSED" >> deployment-summary.txt
+          echo "✅ Monitoring validation: PASSED" >> deployment-summary.txt
+          echo "✅ Security checks: PASSED" >> deployment-summary.txt
+          echo "✅ Integration tests: PASSED" >> deployment-summary.txt
+          echo "" >> deployment-summary.txt
+          echo "Ready for deployment to Ghostnet/Mainnet" >> deployment-summary.txt
+          
+          cat deployment-summary.txt
+          
+      - name: Upload deployment artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: deployment-summary
+          path: |
+            deployment-summary.txt
+            test-logs/
+          retention-days: 30

@@ -1,0 +1,98 @@
+{
+  "data-dir": "/var/lib/tezos",
+  "rpc": {
+    "listen-addrs": ["127.0.0.1:8732"],
+    "cors-origin": "*",
+    "cors-headers": ["Content-Type"],
+    "crt": null,
+    "key": null
+  },
+  "p2p": {
+    "expected-proof-of-work": 26,
+    "bootstrap-peers": [
+      "ghostnet.teztnets.xyz:9732",
+      "ghostnet.ecadinfra.com:9732",
+      "ghostnet.smartpy.io:9732"
+    ],
+    "listen-addr": "0.0.0.0:9732",
+    "discovery-addr": "0.0.0.0:10732",
+    "private-mode": false,
+    "limits": {
+      "authentication-timeout": 5,
+      "accepted-connections": 50,
+      "max-connections": 100,
+      "max-incoming-connections": 25,
+      "max-download-speed": -1,
+      "max-upload-speed": -1,
+      "read-buffer-size": 65536,
+      "read-queue-size": null,
+      "write-queue-size": null,
+      "incoming-app-message-queue-size": null,
+      "incoming-message-queue-size": null,
+      "outgoing-message-queue-size": null,
+      "max_known_points": 400,
+      "max_known_peer_ids": 400,
+      "peer_greylist_size": 1000,
+      "ip_greylist_size_in_kilobytes": 1024,
+      "ip_greylist_cleanup_delay": 3600,
+      "swap_linger": 30,
+      "binary-chunks-size": 4194304
+    },
+    "disable_mempool": false,
+    "enable_testchain": false,
+    "greylisting_config": {
+      "factor": 1.2,
+      "initial_delay": 1,
+      "disconnection_delay": 60
+    }
+  },
+  "log": {
+    "output": "/var/log/tezos/node.log",
+    "level": "info",
+    "rules": null,
+    "template": "$(date) - $(section): $(message)"
+  },
+  "internal-events": {
+    "uri": "file:///var/log/tezos/node-events.log"
+  },
+  "shell": {
+    "disable_operations_precheck": false,
+    "peer_validator": {
+      "new_head_request_timeout": 60,
+      "block_header_timeout": 60,
+      "block_operations_timeout": 10,
+      "protocol_timeout": 120,
+      "new_head_request_timeout": 60
+    },
+    "prevalidator": {
+      "operations_request_timeout": 10,
+      "max_refused_operations": 1000,
+      "operation_timeout": 10,
+      "max_errors_cache_size": 1000
+    },
+    "chain_validator": {
+      "bootstrap_threshold": 1
+    }
+  },
+  "blockchain_network": {
+    "genesis": {
+      "timestamp": "2022-01-25T15:00:00Z",
+      "block": "BLockGenesisGenesisGenesisGenesisGenesisb83baZgbyZe",
+      "protocol": "ProtoALphaALphaALphaALphaALphaALphaALphaALphaDdp3zK"
+    },
+    "chain_name": "TEZOS_GHOSTNET_2022-01-25T15:00:00Z",
+    "sandboxed_chain_name": "SANDBOXED_TEZOS",
+    "user_activated_upgrades": [],
+    "user_activated_protocol_overrides": [],
+    "default_bootstrap_peers": [
+      "ghostnet.teztnets.xyz:9732",
+      "ghostnet.ecadinfra.com:9732",
+      "ghostnet.smartpy.io:9732",
+      "ghostnet.stakenow.de:9732"
+    ]
+  },
+  "network": "ghostnet",
+  "history_mode": "rolling",
+  "metadata_size_limit": null,
+  "metrics_addr": ["0.0.0.0:9095"]
+}

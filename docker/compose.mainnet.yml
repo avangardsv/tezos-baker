@@ -1,0 +1,340 @@
+version: '3.8'
+
+services:
+  tezos-node:
+    build:
+      context: .
+      dockerfile: octez.Dockerfile
+      args:
+        OCTEZ_VERSION: ${OCTEZ_VERSION:-v20.2}
+    container_name: ${CONTAINER_PREFIX:-tezos}-node
+    restart: ${RESTART_POLICY:-unless-stopped}
+    ports:
+      - "${P2P_PORT:-9732}:9732"  # P2P
+      - "127.0.0.1:${RPC_PORT:-8732}:8732"  # RPC (localhost only for security)
+      - "127.0.0.1:${METRICS_PORT:-9095}:9095"  # Metrics (localhost only)
+    volumes:
+      - ../data:/var/lib/tezos:Z
+      - ../config:/etc/tezos:ro,Z
+      - ../logs:/var/log/tezos:Z
+    environment:
+      - TEZOS_NETWORK=${TEZOS_NETWORK:-mainnet}
+      - ENABLE_RPC=${ENABLE_RPC:-true}
+      - RPC_ADDR=${RPC_ADDR:-127.0.0.1}
+      - MAX_CONNECTIONS=${MAX_CONNECTIONS:-100}
+      - HISTORY_MODE=${HISTORY_MODE:-rolling}
+      - LOG_LEVEL=${LOG_LEVEL:-NOTICE}
+      - ENABLE_METRICS=${ENABLE_METRICS:-true}
+      - OCTEZ_NODE_ARGS=${OCTEZ_NODE_ARGS:-}
+      - PUID=${PUID:-1000}
+      - PGID=${PGID:-1000}
+      - TZ=${TZ:-UTC}
+    healthcheck:
+      test: ["CMD", "tezos-client", "bootstrapped"]
+      interval: ${HEALTH_CHECK_INTERVAL:-30}s
+      timeout: ${HEALTH_CHECK_TIMEOUT:-10}s
+      retries: ${HEALTH_CHECK_RETRIES:-5}
+      start_period: 120s
+    networks:
+      - tezos-network
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "20m"
+        max-file: "5"
+    deploy:
+      resources:
+        limits:
+          memory: ${NODE_MEMORY_LIMIT:-8g}
+          cpus: '${NODE_CPU_LIMIT:-4}'
+
+  tezos-baker:
+    build:
+      context: .
+      dockerfile: octez.Dockerfile
+      args:
+        OCTEZ_VERSION: ${OCTEZ_VERSION:-v20.2}
+    container_name: ${CONTAINER_PREFIX:-tezos}-baker
+    restart: ${RESTART_POLICY:-unless-stopped}
+    depends_on:
+      tezos-node:
+        condition: service_healthy
+    volumes:
+      - ../data:/var/lib/tezos:Z
+      - ../logs:/var/log/tezos:Z
+      # Mount Ledger device if using hardware signer
+      - /dev:/dev:ro
+    environment:
+      - TEZOS_NETWORK=${TEZOS_NETWORK:-mainnet}
+      - BAKER_ALIAS=${BAKER_ALIAS:-baker}
+      - ENABLE_BAKER=${ENABLE_BAKER:-true}
+      - BAKER_FEE=${BAKER_FEE:-2000}
+      - LOG_LEVEL=${LOG_LEVEL:-NOTICE}
+      - OCTEZ_BAKER_ARGS=${OCTEZ_BAKER_ARGS:-}
+      - NODE_RPC_URL=http://tezos-node:8732
+      - USE_LEDGER=${USE_LEDGER:-false}
+      - LEDGER_PATH=${LEDGER_PATH:-/dev/hidraw0}
+      - REMOTE_SIGNER=${REMOTE_SIGNER:-false}
+      - REMOTE_SIGNER_URL=${REMOTE_SIGNER_URL:-http://localhost:6732}
+      - PUID=${PUID:-1000}
+      - PGID=${PGID:-1000}
+      - TZ=${TZ:-UTC}
+    command: >
+      sh -c "
+        if [ \"$$ENABLE_BAKER\" = \"true\" ]; then
+          echo 'Starting Tezos baker for $$BAKER_ALIAS on $$TEZOS_NETWORK'
+          
+          # Configure signer based on settings
+          if [ \"$$USE_LEDGER\" = \"true\" ]; then
+            echo 'Using Ledger hardware signer'
+            exec tezos-baker-alpha run with local node /var/lib/tezos $$BAKER_ALIAS --ledger $$OCTEZ_BAKER_ARGS
+          elif [ \"$$REMOTE_SIGNER\" = \"true\" ]; then
+            echo 'Using remote signer at $$REMOTE_SIGNER_URL'
+            exec tezos-baker-alpha run remote signer $$REMOTE_SIGNER_URL for $$BAKER_ALIAS $$OCTEZ_BAKER_ARGS
+          else
+            echo 'Using local key signer'
+            exec tezos-baker-alpha run with local node /var/lib/tezos $$BAKER_ALIAS $$OCTEZ_BAKER_ARGS
+          fi
+        else
+          echo 'Baker disabled, sleeping...'
+          exec sleep infinity
+        fi
+      "
+    healthcheck:
+      test: ["CMD", "pgrep", "-f", "tezos-baker"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 180s
+    networks:
+      - tezos-network
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "20m"
+        max-file: "5"
+    # Enable privileged mode if using Ledger
+    privileged: ${USE_LEDGER:-false}
+
+  tezos-endorser:
+    build:
+      context: .
+      dockerfile: octez.Dockerfile
+      args:
+        OCTEZ_VERSION: ${OCTEZ_VERSION:-v20.2}
+    container_name: ${CONTAINER_PREFIX:-tezos}-endorser
+    restart: ${RESTART_POLICY:-unless-stopped}
+    depends_on:
+      tezos-node:
+        condition: service_healthy
+    volumes:
+      - ../data:/var/lib/tezos:Z
+      - ../logs:/var/log/tezos:Z
+      # Mount Ledger device if using hardware signer
+      - /dev:/dev:ro
+    environment:
+      - TEZOS_NETWORK=${TEZOS_NETWORK:-mainnet}
+      - BAKER_ALIAS=${BAKER_ALIAS:-baker}
+      - ENABLE_ENDORSER=${ENABLE_ENDORSER:-true}
+      - ENDORSER_FEE=${ENDORSER_FEE:-2000}
+      - LOG_LEVEL=${LOG_LEVEL:-NOTICE}
+      - OCTEZ_ENDORSER_ARGS=${OCTEZ_ENDORSER_ARGS:-}
+      - NODE_RPC_URL=http://tezos-node:8732
+      - USE_LEDGER=${USE_LEDGER:-false}
+      - LEDGER_PATH=${LEDGER_PATH:-/dev/hidraw0}
+      - REMOTE_SIGNER=${REMOTE_SIGNER:-false}
+      - REMOTE_SIGNER_URL=${REMOTE_SIGNER_URL:-http://localhost:6732}
+      - PUID=${PUID:-1000}
+      - PGID=${PGID:-1000}
+      - TZ=${TZ:-UTC}
+    command: >
+      sh -c "
+        if [ \"$$ENABLE_ENDORSER\" = \"true\" ]; then
+          echo 'Starting Tezos endorser for $$BAKER_ALIAS on $$TEZOS_NETWORK'
+          
+          # Configure signer based on settings
+          if [ \"$$USE_LEDGER\" = \"true\" ]; then
+            echo 'Using Ledger hardware signer'
+            exec tezos-endorser-alpha run $$BAKER_ALIAS --ledger $$OCTEZ_ENDORSER_ARGS
+          elif [ \"$$REMOTE_SIGNER\" = \"true\" ]; then
+            echo 'Using remote signer at $$REMOTE_SIGNER_URL'
+            exec tezos-endorser-alpha run remote signer $$REMOTE_SIGNER_URL for $$BAKER_ALIAS $$OCTEZ_ENDORSER_ARGS
+          else
+            echo 'Using local key signer'
+            exec tezos-endorser-alpha run $$BAKER_ALIAS $$OCTEZ_ENDORSER_ARGS
+          fi
+        else
+          echo 'Endorser disabled, sleeping...'
+          exec sleep infinity
+        fi
+      "
+    healthcheck:
+      test: ["CMD", "pgrep", "-f", "tezos-endorser"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 180s
+    networks:
+      - tezos-network
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "20m"
+        max-file: "5"
+    # Enable privileged mode if using Ledger
+    privileged: ${USE_LEDGER:-false}
+
+  # Monitoring services (always enabled for mainnet)
+  prometheus:
+    image: prom/prometheus:v2.47.0
+    container_name: ${CONTAINER_PREFIX:-tezos}-prometheus
+    restart: ${RESTART_POLICY:-unless-stopped}
+    ports:
+      - "127.0.0.1:${PROMETHEUS_PORT:-9090}:9090"  # Localhost only
+    volumes:
+      - ../monitoring/prometheus:/etc/prometheus:ro,Z
+      - prometheus-data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--storage.tsdb.retention.time=30d'
+      - '--web.enable-lifecycle'
+    networks:
+      - tezos-network
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  grafana:
+    image: grafana/grafana:10.1.0
+    container_name: ${CONTAINER_PREFIX:-tezos}-grafana
+    restart: ${RESTART_POLICY:-unless-stopped}
+    ports:
+      - "127.0.0.1:${GRAFANA_PORT:-3000}:3000"  # Localhost only
+    volumes:
+      - ../monitoring/grafana:/etc/grafana/provisioning:ro,Z
+      - grafana-data:/var/lib/grafana
+    environment:
+      - GF_SECURITY_ADMIN_USER=${GRAFANA_ADMIN:-admin}
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASS}
+      - GF_INSTALL_PLUGINS=grafana-clock-panel,grafana-simple-json-datasource
+      - GF_USERS_ALLOW_SIGN_UP=false
+      - GF_SERVER_DOMAIN=${GRAFANA_DOMAIN:-localhost}
+      - GF_SECURITY_COOKIE_SECURE=true
+      - GF_SECURITY_STRICT_TRANSPORT_SECURITY=true
+    depends_on:
+      - prometheus
+    networks:
+      - tezos-network
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  alertmanager:
+    image: prom/alertmanager:v0.25.0
+    container_name: ${CONTAINER_PREFIX:-tezos}-alertmanager
+    restart: ${RESTART_POLICY:-unless-stopped}
+    ports:
+      - "127.0.0.1:9093:9093"  # Localhost only
+    volumes:
+      - ../monitoring/alertmanager:/etc/alertmanager:ro,Z
+      - alertmanager-data:/alertmanager
+    command:
+      - '--config.file=/etc/alertmanager/alertmanager.yml'
+      - '--storage.path=/alertmanager'
+      - '--web.external-url=http://localhost:9093'
+    networks:
+      - tezos-network
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # Node exporter for system metrics
+  node-exporter:
+    image: prom/node-exporter:v1.6.1
+    container_name: ${CONTAINER_PREFIX:-tezos}-node-exporter
+    restart: ${RESTART_POLICY:-unless-stopped}
+    ports:
+      - "127.0.0.1:9100:9100"  # Localhost only
+    command:
+      - '--path.rootfs=/host'
+      - '--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)'
+    volumes:
+      - '/:/host:ro,rslave'
+    networks:
+      - tezos-network
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "5m"
+        max-file: "2"
+
+  # Remote signer service (optional)
+  tezos-signer:
+    build:
+      context: .
+      dockerfile: octez.Dockerfile
+      args:
+        OCTEZ_VERSION: ${OCTEZ_VERSION:-v20.2}
+    container_name: ${CONTAINER_PREFIX:-tezos}-signer
+    restart: ${RESTART_POLICY:-unless-stopped}
+    ports:
+      - "127.0.0.1:6732:6732"  # Signer RPC (localhost only)
+    volumes:
+      - ../data:/var/lib/tezos:Z
+      - ../logs:/var/log/tezos:Z
+      - /dev:/dev:ro
+    environment:
+      - TEZOS_NETWORK=${TEZOS_NETWORK:-mainnet}
+      - BAKER_ALIAS=${BAKER_ALIAS:-baker}
+      - USE_LEDGER=${USE_LEDGER:-false}
+      - LEDGER_PATH=${LEDGER_PATH:-/dev/hidraw0}
+      - LOG_LEVEL=${LOG_LEVEL:-NOTICE}
+      - PUID=${PUID:-1000}
+      - PGID=${PGID:-1000}
+      - TZ=${TZ:-UTC}
+    command: >
+      sh -c "
+        if [ \"$$REMOTE_SIGNER\" = \"true\" ]; then
+          echo 'Starting remote signer service'
+          if [ \"$$USE_LEDGER\" = \"true\" ]; then
+            exec tezos-signer launch http signer --address 0.0.0.0 --port 6732
+          else
+            exec tezos-signer launch socket signer --path /var/lib/tezos/signer.sock
+          fi
+        else
+          echo 'Remote signer disabled, sleeping...'
+          exec sleep infinity
+        fi
+      "
+    profiles:
+      - signer
+    privileged: ${USE_LEDGER:-false}
+    networks:
+      - tezos-network
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+volumes:
+  prometheus-data:
+    driver: local
+  grafana-data:
+    driver: local
+  alertmanager-data:
+    driver: local
+
+networks:
+  tezos-network:
+    driver: bridge
+    name: tezos-mainnet

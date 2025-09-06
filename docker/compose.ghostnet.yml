@@ -1,0 +1,251 @@
+version: '3.8'
+
+services:
+  tezos-node:
+    build:
+      context: .
+      dockerfile: octez.Dockerfile
+      args:
+        OCTEZ_VERSION: ${OCTEZ_VERSION:-v20.2}
+    container_name: ${CONTAINER_PREFIX:-tezos}-node
+    restart: ${RESTART_POLICY:-unless-stopped}
+    ports:
+      - "${P2P_PORT:-9732}:9732"  # P2P
+      - "${RPC_PORT:-8732}:8732"  # RPC
+      - "${METRICS_PORT:-9095}:9095"  # Metrics
+    volumes:
+      - ../data:/var/lib/tezos:Z
+      - ../config:/etc/tezos:ro,Z
+      - ../logs:/var/log/tezos:Z
+    environment:
+      - TEZOS_NETWORK=${TEZOS_NETWORK:-ghostnet}
+      - ENABLE_RPC=${ENABLE_RPC:-true}
+      - RPC_ADDR=${RPC_ADDR:-127.0.0.1}
+      - MAX_CONNECTIONS=${MAX_CONNECTIONS:-50}
+      - HISTORY_MODE=${HISTORY_MODE:-rolling}
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+      - ENABLE_METRICS=${ENABLE_METRICS:-true}
+      - OCTEZ_NODE_ARGS=${OCTEZ_NODE_ARGS:-}
+      - PUID=${PUID:-1000}
+      - PGID=${PGID:-1000}
+      - TZ=${TZ:-UTC}
+    healthcheck:
+      test: ["CMD", "tezos-client", "bootstrapped"]
+      interval: ${HEALTH_CHECK_INTERVAL:-30}s
+      timeout: ${HEALTH_CHECK_TIMEOUT:-10}s
+      retries: ${HEALTH_CHECK_RETRIES:-3}
+      start_period: 60s
+    networks:
+      - tezos-network
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  tezos-baker:
+    build:
+      context: .
+      dockerfile: octez.Dockerfile
+      args:
+        OCTEZ_VERSION: ${OCTEZ_VERSION:-v20.2}
+    container_name: ${CONTAINER_PREFIX:-tezos}-baker
+    restart: ${RESTART_POLICY:-unless-stopped}
+    depends_on:
+      tezos-node:
+        condition: service_healthy
+    volumes:
+      - ../data:/var/lib/tezos:Z
+      - ../logs:/var/log/tezos:Z
+    environment:
+      - TEZOS_NETWORK=${TEZOS_NETWORK:-ghostnet}
+      - BAKER_ALIAS=${BAKER_ALIAS:-alice}
+      - ENABLE_BAKER=${ENABLE_BAKER:-true}
+      - BAKER_FEE=${BAKER_FEE:-1000}
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+      - OCTEZ_BAKER_ARGS=${OCTEZ_BAKER_ARGS:-}
+      - NODE_RPC_URL=http://tezos-node:8732
+      - PUID=${PUID:-1000}
+      - PGID=${PGID:-1000}
+      - TZ=${TZ:-UTC}
+    command: >
+      sh -c "
+        if [ \"$$ENABLE_BAKER\" = \"true\" ]; then
+          echo 'Starting Tezos baker for $$BAKER_ALIAS on $$TEZOS_NETWORK'
+          exec tezos-baker-alpha run with local node /var/lib/tezos $$BAKER_ALIAS $$OCTEZ_BAKER_ARGS
+        else
+          echo 'Baker disabled, sleeping...'
+          exec sleep infinity
+        fi
+      "
+    healthcheck:
+      test: ["CMD", "pgrep", "-f", "tezos-baker"]
+      interval: 60s
+      timeout: 10s
+      retries: 3
+      start_period: 120s
+    networks:
+      - tezos-network
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  tezos-endorser:
+    build:
+      context: .
+      dockerfile: octez.Dockerfile
+      args:
+        OCTEZ_VERSION: ${OCTEZ_VERSION:-v20.2}
+    container_name: ${CONTAINER_PREFIX:-tezos}-endorser
+    restart: ${RESTART_POLICY:-unless-stopped}
+    depends_on:
+      tezos-node:
+        condition: service_healthy
+    volumes:
+      - ../data:/var/lib/tezos:Z
+      - ../logs:/var/log/tezos:Z
+    environment:
+      - TEZOS_NETWORK=${TEZOS_NETWORK:-ghostnet}
+      - BAKER_ALIAS=${BAKER_ALIAS:-alice}
+      - ENABLE_ENDORSER=${ENABLE_ENDORSER:-true}
+      - ENDORSER_FEE=${ENDORSER_FEE:-1000}
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+      - OCTEZ_ENDORSER_ARGS=${OCTEZ_ENDORSER_ARGS:-}
+      - NODE_RPC_URL=http://tezos-node:8732
+      - PUID=${PUID:-1000}
+      - PGID=${PGID:-1000}
+      - TZ=${TZ:-UTC}
+    command: >
+      sh -c "
+        if [ \"$$ENABLE_ENDORSER\" = \"true\" ]; then
+          echo 'Starting Tezos endorser for $$BAKER_ALIAS on $$TEZOS_NETWORK'
+          exec tezos-endorser-alpha run $$BAKER_ALIAS $$OCTEZ_ENDORSER_ARGS
+        else
+          echo 'Endorser disabled, sleeping...'
+          exec sleep infinity
+        fi
+      "
+    healthcheck:
+      test: ["CMD", "pgrep", "-f", "tezos-endorser"]
+      interval: 60s
+      timeout: 10s
+      retries: 3
+      start_period: 120s
+    networks:
+      - tezos-network
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # Monitoring services (conditional)
+  prometheus:
+    image: prom/prometheus:v2.47.0
+    container_name: ${CONTAINER_PREFIX:-tezos}-prometheus
+    restart: ${RESTART_POLICY:-unless-stopped}
+    ports:
+      - "${PROMETHEUS_PORT:-9090}:9090"
+    volumes:
+      - ../monitoring/prometheus:/etc/prometheus:ro,Z
+      - prometheus-data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--storage.tsdb.retention.time=15d'
+      - '--web.enable-lifecycle'
+    profiles:
+      - monitoring
+    networks:
+      - tezos-network
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "5m"
+        max-file: "2"
+
+  grafana:
+    image: grafana/grafana:10.1.0
+    container_name: ${CONTAINER_PREFIX:-tezos}-grafana
+    restart: ${RESTART_POLICY:-unless-stopped}
+    ports:
+      - "${GRAFANA_PORT:-3000}:3000"
+    volumes:
+      - ../monitoring/grafana:/etc/grafana/provisioning:ro,Z
+      - grafana-data:/var/lib/grafana
+    environment:
+      - GF_SECURITY_ADMIN_USER=${GRAFANA_ADMIN:-admin}
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASS:-change_me_secure}
+      - GF_INSTALL_PLUGINS=grafana-clock-panel,grafana-simple-json-datasource
+      - GF_USERS_ALLOW_SIGN_UP=false
+    profiles:
+      - monitoring
+    depends_on:
+      - prometheus
+    networks:
+      - tezos-network
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "5m"
+        max-file: "2"
+
+  alertmanager:
+    image: prom/alertmanager:v0.25.0
+    container_name: ${CONTAINER_PREFIX:-tezos}-alertmanager
+    restart: ${RESTART_POLICY:-unless-stopped}
+    ports:
+      - "9093:9093"
+    volumes:
+      - ../monitoring/alertmanager:/etc/alertmanager:ro,Z
+      - alertmanager-data:/alertmanager
+    command:
+      - '--config.file=/etc/alertmanager/alertmanager.yml'
+      - '--storage.path=/alertmanager'
+    profiles:
+      - monitoring
+    networks:
+      - tezos-network
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "5m"
+        max-file: "2"
+
+  # Node exporter for system metrics
+  node-exporter:
+    image: prom/node-exporter:v1.6.1
+    container_name: ${CONTAINER_PREFIX:-tezos}-node-exporter
+    restart: ${RESTART_POLICY:-unless-stopped}
+    ports:
+      - "9100:9100"
+    command:
+      - '--path.rootfs=/host'
+    volumes:
+      - '/:/host:ro,rslave'
+    profiles:
+      - monitoring
+    networks:
+      - tezos-network
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "5m"
+        max-file: "2"
+
+volumes:
+  prometheus-data:
+    driver: local
+  grafana-data:
+    driver: local
+  alertmanager-data:
+    driver: local
+
+networks:
+  tezos-network:
+    driver: bridge
+    name: tezos-ghostnet

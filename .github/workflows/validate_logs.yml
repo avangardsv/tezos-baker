@@ -1,0 +1,267 @@
+name: Validate Logging System
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+  schedule:
+    # Run daily to ensure logging system health
+    - cron: '0 6 * * *'
+
+jobs:
+  validate-logging:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Set up environment
+        run: |
+          # Create logs directory if it doesn't exist
+          mkdir -p logs
+          
+          # Make scripts executable
+          chmod +x scripts/lib/log.sh
+          chmod +x scripts/test_logging.sh
+          chmod +x scripts/*.sh
+          
+      - name: Validate logging library
+        run: |
+          echo "Validating logging library structure..."
+          
+          # Check if logging library exists
+          if [ ! -f "scripts/lib/log.sh" ]; then
+            echo "ERROR: Logging library not found at scripts/lib/log.sh"
+            exit 1
+          fi
+          
+          # Check for required functions
+          required_functions=("log_step" "run_logged_command" "log_script_start" "log_script_end")
+          for func in "${required_functions[@]}"; do
+            if ! grep -q "^$func()" scripts/lib/log.sh; then
+              echo "ERROR: Required function '$func' not found in logging library"
+              exit 1
+            fi
+          done
+          
+          echo "✓ Logging library structure validated"
+          
+      - name: Test basic logging functionality
+        run: |
+          echo "Testing basic logging functionality..."
+          
+          # Run logging tests
+          ./scripts/test_logging.sh --generate-examples
+          
+          # Verify log file was created
+          log_file="logs/test_logging_$(date +%Y-%m-%d).log"
+          if [ ! -f "$log_file" ]; then
+            echo "ERROR: Log file was not created at $log_file"
+            exit 1
+          fi
+          
+          echo "✓ Log file created: $log_file"
+          
+      - name: Validate log format
+        run: |
+          echo "Validating log entry format..."
+          
+          log_file="logs/test_logging_$(date +%Y-%m-%d).log"
+          
+          # Check log format: [TIMESTAMP] [STEP_NAME] [STATUS] - MESSAGE
+          if ! grep -E '^\[[0-9]{4}-[0-9]{2}-[0-9]{2} [0-9]{2}:[0-9]{2}:[0-9]{2}\] [A-Z_]+ (START|SUCCESS|ERROR|WARNING|INFO) - .*' "$log_file" > /dev/null; then
+            echo "ERROR: Log entries do not match expected format"
+            echo "Expected: [YYYY-MM-DD HH:MM:SS] STEP_NAME STATUS - MESSAGE"
+            echo "Sample entries from log file:"
+            head -5 "$log_file"
+            exit 1
+          fi
+          
+          echo "✓ Log format validated"
+          
+      - name: Check log entry statistics
+        run: |
+          echo "Analyzing log entry statistics..."
+          
+          log_file="logs/test_logging_$(date +%Y-%m-%d).log"
+          
+          # Count different log levels
+          total_entries=$(grep -c '\[.*\].*\(START\|SUCCESS\|ERROR\|WARNING\|INFO\)' "$log_file" 2>/dev/null || echo "0")
+          success_count=$(grep -c 'SUCCESS' "$log_file" 2>/dev/null || echo "0")
+          error_count=$(grep -c 'ERROR' "$log_file" 2>/dev/null || echo "0")
+          warning_count=$(grep -c 'WARNING' "$log_file" 2>/dev/null || echo "0")
+          start_count=$(grep -c 'START' "$log_file" 2>/dev/null || echo "0")
+          info_count=$(grep -c 'INFO' "$log_file" 2>/dev/null || echo "0")
+          
+          echo "Log Entry Statistics:"
+          echo "- Total entries: $total_entries"
+          echo "- SUCCESS: $success_count"
+          echo "- ERROR: $error_count"
+          echo "- WARNING: $warning_count" 
+          echo "- START: $start_count"
+          echo "- INFO: $info_count"
+          
+          # Validate minimum entries were created
+          if [ "$total_entries" -lt 20 ]; then
+            echo "ERROR: Too few log entries generated ($total_entries < 20)"
+            exit 1
+          fi
+          
+          # Validate we have some successful operations
+          if [ "$success_count" -lt 5 ]; then
+            echo "ERROR: Too few successful operations logged ($success_count < 5)"
+            exit 1
+          fi
+          
+          echo "✓ Log statistics validated"
+          
+      - name: Test log parsing and monitoring
+        run: |
+          echo "Testing log parsing capabilities..."
+          
+          log_file="logs/test_logging_$(date +%Y-%m-%d).log"
+          
+          # Test various parsing scenarios
+          echo "Testing error detection:"
+          error_lines=$(grep "ERROR" "$log_file" || echo "No errors found")
+          echo "$error_lines"
+          
+          echo -e "\nTesting warning detection:"
+          warning_lines=$(grep "WARNING" "$log_file" || echo "No warnings found") 
+          echo "$warning_lines"
+          
+          echo -e "\nTesting success pattern:"
+          success_lines=$(grep "SUCCESS" "$log_file" | head -3)
+          echo "$success_lines"
+          
+          # Test timestamp extraction
+          echo -e "\nTesting timestamp extraction:"
+          timestamps=$(grep -o '\[[0-9-]* [0-9:]*\]' "$log_file" | head -3)
+          echo "$timestamps"
+          
+          # Test step name extraction
+          echo -e "\nTesting step name extraction:"
+          steps=$(grep -o '\] [A-Z_]* ' "$log_file" | sed 's/] //' | sed 's/ $//' | sort -u | head -5)
+          echo "$steps"
+          
+          echo -e "\n✓ Log parsing capabilities validated"
+          
+      - name: Validate script integration
+        run: |
+          echo "Testing script integration with logging..."
+          
+          # Test that scripts properly source the logging library
+          scripts_with_logging=(
+            "scripts/import_snapshot.sh"
+            "scripts/check_sync.sh" 
+            "scripts/register_delegate.sh"
+            "scripts/start_baker.sh"
+            "scripts/backup_keys.sh"
+            "scripts/clean_node_data.sh"
+          )
+          
+          for script in "${scripts_with_logging[@]}"; do
+            if [ -f "$script" ]; then
+              # Check if script sources the logging library
+              if ! grep -q 'source.*lib/log.sh' "$script"; then
+                echo "ERROR: Script $script does not source logging library"
+                exit 1
+              fi
+              
+              # Check if script calls log_script_start
+              if ! grep -q 'log_script_start' "$script"; then
+                echo "WARNING: Script $script may not call log_script_start"
+              fi
+              
+              echo "✓ $script integrates with logging system"
+            else
+              echo "WARNING: Script $script not found"
+            fi
+          done
+          
+      - name: Generate log monitoring examples
+        run: |
+          echo "Generating log monitoring command examples..."
+          
+          cat > log_monitoring_examples.md << 'EOF'
+          # Log Monitoring Examples
+          
+          ## Real-time Monitoring
+          ```bash
+          # Monitor all logs in real-time
+          tail -f logs/*.log
+          
+          # Monitor specific workflow
+          tail -f logs/import_snapshot_*.log
+          
+          # Monitor for errors across all logs
+          tail -f logs/*.log | grep -E "(ERROR|WARNING)"
+          ```
+          
+          ## Log Analysis
+          ```bash
+          # Count errors in the last 24 hours
+          find logs -name "*.log" -mtime -1 -exec grep -c "ERROR" {} \; | paste -sd+ | bc
+          
+          # Find failed workflows
+          grep -l "ERROR" logs/*.log
+          
+          # Extract timing information
+          grep "completed in" logs/*.log
+          
+          # Get workflow success rate
+          total=$(grep -c "START" logs/*.log | paste -sd+ | bc)
+          success=$(grep -c "SUCCESS" logs/*.log | paste -sd+ | bc)
+          echo "Success rate: $((success * 100 / total))%"
+          ```
+          
+          ## Alerting Integration
+          ```bash
+          # Send alert on errors (example for Slack)
+          if grep -q "ERROR" logs/*.log; then
+            curl -X POST -H 'Content-type: application/json' \
+              --data '{"text":"🔴 Tezos Baker Error Detected"}' \
+              "$SLACK_WEBHOOK_URL"
+          fi
+          
+          # Prometheus metrics export
+          echo "tezos_baker_errors_total $(grep -c ERROR logs/*.log)" > /var/lib/prometheus/node-exporter/tezos_baker.prom
+          ```
+          EOF
+          
+          echo "✓ Log monitoring examples generated"
+          
+      - name: Upload log artifacts
+        uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: test-logs
+          path: |
+            logs/
+            log_monitoring_examples.md
+          retention-days: 7
+          
+      - name: Summary
+        run: |
+          echo "🎉 Logging System Validation Complete!"
+          echo ""
+          echo "✅ Validated Components:"
+          echo "  - Logging library structure and functions"
+          echo "  - Log file creation and format"
+          echo "  - Log entry statistics and patterns"
+          echo "  - Parsing and monitoring capabilities"
+          echo "  - Script integration with logging system"
+          echo ""
+          echo "📊 Test Results:"
+          log_file="logs/test_logging_$(date +%Y-%m-%d).log"
+          if [ -f "$log_file" ]; then
+            total=$(grep -c '\[.*\].*\(START\|SUCCESS\|ERROR\|WARNING\|INFO\)' "$log_file")
+            success=$(grep -c 'SUCCESS' "$log_file")
+            echo "  - Total log entries: $total"
+            echo "  - Successful operations: $success"
+            echo "  - Log file size: $(du -h "$log_file" | cut -f1)"
+          fi
+          echo ""
+          echo "🔍 Log files are available as artifacts for inspection"

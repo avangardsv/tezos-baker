@@ -1,0 +1,80 @@
+[2025-09-06 17:18:06] SCRIPT_INIT START - Starting test_logging - Test logging system functionality
+[2025-09-06 17:18:06] SCRIPT_INIT INFO - Log file: logs/test_logging_2025-09-06.log
+[2025-09-06 17:18:06] SCRIPT_INIT INFO - Working directory: /Users/admin/demo
+[2025-09-06 17:18:06] SCRIPT_INIT INFO - User: admin
+[2025-09-06 17:18:06] SCRIPT_INIT INFO - Arguments: Test logging system functionality
+[2025-09-06 17:18:06] SYSTEM_INFO INFO - OS: Darwin 24.6.0
+[2025-09-06 17:18:06] SYSTEM_INFO INFO - Docker: Not installed
+[2025-09-06 17:18:06] SYSTEM_INFO INFO - Docker Compose: Not installed
+[2025-09-06 17:18:06] SYSTEM_INFO INFO - Available disk space: 890Gi
+[2025-09-06 17:18:06] SYSTEM_INFO INFO - Memory: N/A
+[2025-09-06 17:18:06] BASIC_LOGGING START - Testing basic logging functions
+[2025-09-06 17:18:06] TEST_STEP START - Beginning test operation
+[2025-09-06 17:18:07] TEST_STEP SUCCESS - Test operation completed successfully
+[2025-09-06 17:18:07] TEST_STEP INFO - This is an informational message
+[2025-09-06 17:18:07] TEST_STEP WARNING - This is a warning message
+[2025-09-06 17:18:07] TEST_STEP ERROR - This is an error message (simulated)
+[2025-09-06 17:18:07] BASIC_LOGGING SUCCESS - All log levels tested
+[2025-09-06 17:18:07] COMMAND_LOGGING START - Testing command execution logging
+[2025-09-06 17:18:07] TEST_SUCCESS START - Testing successful command
+Hello from test command
+[2025-09-06 17:18:07] TEST_SUCCESS SUCCESS - Testing successful command completed in 0s
+[2025-09-06 17:18:07] TEST_OUTPUT START - Testing command with output
+lrwxr-xr-x@ 1 root  wheel  11 16 сер 21:44 /tmp -> private/tmp
+[2025-09-06 17:18:07] TEST_OUTPUT SUCCESS - Testing command with output completed in 0s
+[2025-09-06 17:18:07] TEST_TIMING START - Testing command timing
+[2025-09-06 17:18:09] TEST_TIMING SUCCESS - Testing command timing completed in 2s
+[2025-09-06 17:18:09] COMMAND_LOGGING SUCCESS - Command logging tests completed
+[2025-09-06 17:18:09] SYSTEM_LOGGING START - Testing system information logging
+[2025-09-06 17:18:10] SYSTEM_INFO INFO - OS: Darwin 24.6.0
+[2025-09-06 17:18:10] SYSTEM_INFO INFO - Docker: Not installed
+[2025-09-06 17:18:10] SYSTEM_INFO INFO - Docker Compose: Not installed
+[2025-09-06 17:18:10] SYSTEM_INFO INFO - Available disk space: 890Gi
+[2025-09-06 17:18:10] SYSTEM_INFO INFO - Memory: N/A
+[2025-09-06 17:18:10] SYSTEM_LOGGING SUCCESS - System information logged
+[2025-09-06 17:18:10] PREREQUISITE_TEST START - Testing prerequisite validation
+[2025-09-06 17:18:10] PREREQUISITES SUCCESS - All required commands available: bash echo ls
+[2025-09-06 17:18:10] PREREQUISITE_TEST SUCCESS - Prerequisite validation tested
+[2025-09-06 17:18:10] EXAMPLE_GENERATION START - Generating realistic example log entries
+[2025-09-06 17:18:10] SNAPSHOT_DOWNLOAD START - Downloading ghostnet snapshot from https://snapshots.tezos.giganode.io
+[2025-09-06 17:18:11] SNAPSHOT_DOWNLOAD INFO - Download progress: 25% (125MB/500MB)
+[2025-09-06 17:18:12] SNAPSHOT_DOWNLOAD INFO - Download progress: 75% (375MB/500MB)
+[2025-09-06 17:18:13] SNAPSHOT_DOWNLOAD SUCCESS - Downloaded ghostnet.full (500MB) in 3m45s
+[2025-09-06 17:18:13] SNAPSHOT_IMPORT START - Importing snapshot into Tezos node
+[2025-09-06 17:18:14] SNAPSHOT_IMPORT INFO - Validating snapshot integrity
+[2025-09-06 17:18:15] SNAPSHOT_IMPORT INFO - Import progress: 50% - processing block 2,450,000
+[2025-09-06 17:18:16] SNAPSHOT_IMPORT SUCCESS - Snapshot imported successfully in 2m30s
+[2025-09-06 17:18:16] NODE_START START - Starting Tezos node on ghostnet
+[2025-09-06 17:18:17] NODE_START INFO - Node started with PID=12345
+[2025-09-06 17:18:17] NODE_START INFO - Connecting to network peers
+[2025-09-06 17:18:18] NODE_START SUCCESS - Connected to 15 peers, bootstrapping blockchain
+[2025-09-06 17:18:18] SYNC_CHECK START - Monitoring node synchronization
+[2025-09-06 17:18:18] SYNC_CHECK INFO - Current head: 2,450,123, Network head: 2,450,125 (lag: 2 blocks)
+[2025-09-06 17:18:19] SYNC_CHECK SUCCESS - Node is synchronized (lag: 0 blocks)
+[2025-09-06 17:18:19] DELEGATE_REGISTRATION START - Registering 'alice' as delegate
+[2025-09-06 17:18:19] DELEGATE_REGISTRATION INFO - Account balance: 6500 XTZ (sufficient for baking)
+[2025-09-06 17:18:20] DELEGATE_REGISTRATION INFO - Registration transaction: ooBgHcpKxvHjzSvb4ELV5fLrLEq8
+[2025-09-06 17:18:21] DELEGATE_REGISTRATION SUCCESS - Delegate registration confirmed in block 2,450,128
+[2025-09-06 17:18:21] BAKER_START START - Starting Tezos baker for 'alice'
+[2025-09-06 17:18:22] BAKER_START SUCCESS - Baker started successfully (PID: 12567)
+[2025-09-06 17:18:22] ENDORSER_START START - Starting Tezos endorser for 'alice'
+[2025-09-06 17:18:23] ENDORSER_START SUCCESS - Endorser started successfully (PID: 12568)
+[2025-09-06 17:18:23] BAKING_ACTIVITY INFO - Baking rights found for levels 2,450,145-2,450,147
+[2025-09-06 17:18:23] BAKING_ACTIVITY SUCCESS - Successfully baked block 2,450,145
+[2025-09-06 17:18:23] ENDORSING_ACTIVITY SUCCESS - Successfully endorsed block 2,450,146
+[2025-09-06 17:18:23] SYNC_CHECK WARNING - Head lag increased to 8 blocks - investigating
+[2025-09-06 17:18:24] SYNC_CHECK INFO - Network connectivity restored
+[2025-09-06 17:18:24] SYNC_CHECK SUCCESS - Head lag reduced to 1 block
+[2025-09-06 17:18:24] EXAMPLE_GENERATION SUCCESS - Generated realistic example log entries
+[2025-09-06 17:18:24] LOG_FILE_TEST START - Testing log file operations
+[2025-09-06 17:18:24] LOG_FILE_TEST SUCCESS - Log file exists: logs/test_logging_2025-09-06.log
+[2025-09-06 17:18:24] LOG_FILE_TEST INFO - Log file size: 8,0K
+[2025-09-06 17:18:24] LOG_FILE_TEST INFO - Total log entries: 69
+[2025-09-06 17:18:24] LOG_FILE_TEST INFO - Log entry breakdown - SUCCESS: 22, WARNING: 2, ERROR: 1
+[2025-09-06 17:18:24] LOG_FILE_TEST SUCCESS - Log file operations tested successfully
+[2025-09-06 17:18:24] LOG_DISPLAY START - Showing recent log entries
+[2025-09-06 17:18:24] LOG_DISPLAY SUCCESS - Recent logs displayed
+[2025-09-06 17:18:24] TEST_COMPLETE SUCCESS - All logging tests completed successfully
+[2025-09-06 17:18:24] TEST_COMPLETE INFO - Log file location: logs/test_logging_2025-09-06.log
+[2025-09-06 17:18:24] TEST_COMPLETE INFO - Use 'tail -f logs/test_logging_2025-09-06.log' to monitor logs in real-time
+[2025-09-06 17:18:24] SCRIPT_INIT SUCCESS - test_logging completed successfully
