@@ -34,6 +34,7 @@ Complete guide to all documentation in this repository.
 | Document | Purpose | Audience |
 |----------|---------|----------|
 | `RUNBOOK_start_stop.md` | Service management procedures | Operators |
+| `RUNBOOK_operations.md` | Operational procedures and best practices | Operators |
 | `RUNBOOK_snapshot_restore.md` | Recovery procedures | Operators |
 | `RUNBOOK_incidents.md` | Incident response | Operators |
 | `MONITORING.md` | Monitoring setup guide | Operators |
@@ -44,6 +45,8 @@ Complete guide to all documentation in this repository.
 |----------|---------|----------|
 | `SECURITY.md` | Security best practices | Everyone |
 | `SECURITY_PRIVACY.md` | Privacy and security details | Security teams |
+| `CONSENSUS_SECURITY.md` | Consensus, key management, and slashing | Operators |
+| `UPGRADES_PATCHING.md` | Upgrade and patching procedures | Operators |
 
 ### 🔧 Maintenance
 
@@ -95,10 +98,10 @@ Complete guide to all documentation in this repository.
 |----------|-------|------------|--------|
 | Getting Started | 4 | ~40KB | ✅ Complete |
 | Architecture | 4 | ~110KB | ✅ Complete |
-| Operations | 4 | ~15KB | ✅ Complete |
-| Security | 2 | ~13KB | ✅ Complete |
+| Operations | 5 | ~17KB | ✅ Complete |
+| Security | 4 | ~18KB | ✅ Complete |
 | Maintenance | 3 | ~32KB | ✅ Complete |
-| **TOTAL** | **17** | **~210KB** | **✅ Complete** |
+| **TOTAL** | **20** | **~217KB** | **✅ Complete** |
 
 ## File Descriptions
 
