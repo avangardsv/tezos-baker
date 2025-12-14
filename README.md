@@ -65,19 +65,21 @@ For monitoring, custom validators, and HA setup:
 
 ## Network Support
 
-- **Ghostnet** (Testnet): Default, for testing
-- **Mainnet**: Production - requires 6000+ XTZ and proper security
+- **Ghostnet** (Testnet): Optimized for testing - simple and secure enough
+- **Mainnet**: Not recommended with this simplified setup (needs hardware wallet, monitoring, security hardening)
 
-Switch networks by setting `TEZOS_NETWORK` in `.env` file.
+**This repository is designed for Ghostnet testnet only.**
 
 ## Prerequisites
 
 - Docker and Docker Compose
 - 2+ CPU cores, 4GB RAM, 50GB+ disk (Ghostnet)
-- 4+ CPU cores, 8GB RAM, 100GB+ SSD (Mainnet)
 
 ## Notes
 
-- The `agents/` directory (54MB) should be moved to a separate repository for AI workflow tools
-- The `monitoring/` directory is optional and can be enabled with `--profile monitoring`
-- The `security/` directory contains hardening guides for production deployments
+This is a **testnet-only** setup optimized for simplicity:
+- No hardware wallet required (keys stored in container)
+- No advanced monitoring (use simple `docker logs` and `./scripts/status.sh`)
+- Perfect for learning and testing on Ghostnet
+
+For production mainnet deployment, see archived branches with security hardening and monitoring.
