@@ -1,0 +1,18 @@
+[2025-12-14 20:58:42] SCRIPT_INIT START - Starting import_snapshot - Import ghostnet snapshot
+[2025-12-14 20:58:42] SCRIPT_INIT INFO - Log file: logs/import_snapshot_2025-12-14.log
+[2025-12-14 20:58:42] SCRIPT_INIT INFO - Working directory: /Users/admin/tezos-baker
+[2025-12-14 20:58:42] SCRIPT_INIT INFO - User: admin
+[2025-12-14 20:58:42] SCRIPT_INIT INFO - Arguments: Import ghostnet snapshot
+[2025-12-14 20:58:42] SYSTEM_INFO INFO - OS: Darwin 24.6.0
+[2025-12-14 20:58:42] SYSTEM_INFO INFO - Docker: Docker version 28.3.3, build 980b856
+[2025-12-14 20:58:43] SYSTEM_INFO INFO - Docker Compose: Docker Compose version 2.39.2
+[2025-12-14 20:58:43] SYSTEM_INFO INFO - Available disk space: 840Gi
+[2025-12-14 20:58:43] SYSTEM_INFO INFO - Memory: N/A
+[2025-12-14 20:58:43] VALIDATION SUCCESS - Network 'ghostnet' is valid
+[2025-12-14 20:58:43] PREREQUISITES START - Checking required tools
+[2025-12-14 20:58:43] PREREQUISITES SUCCESS - All required commands available: curl docker
+[2025-12-14 20:58:43] PREREQUISITES SUCCESS - Available disk space: 1680GB
+[2025-12-14 20:58:43] CONTAINER_CHECK START - Checking if tezos-node container exists
+[2025-12-14 20:58:43] CONTAINER_CHECK ERROR - Container 'tezos-node' does not exist
+[2025-12-14 20:58:43] CONTAINER_CHECK INFO - Start the Tezos node first using docker compose
+[2025-12-14 20:58:43] SCRIPT_INIT ERROR - import_snapshot failed with exit code 1

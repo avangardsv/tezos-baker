@@ -38,12 +38,12 @@ validate_network() {
 check_prerequisites() {
     log_step "PREREQUISITES" "START" "Checking required tools"
     
-    local required_commands=("curl" "docker")
+    local required_commands=("curl" "podman")
     validate_prerequisites "${required_commands[@]}"
     
-    # Check if Docker daemon is running
-    if ! docker info >/dev/null 2>&1; then
-        log_step "PREREQUISITES" "ERROR" "Docker daemon is not running"
+    # Check if Podman is running
+    if ! podman info >/dev/null 2>&1; then
+        log_step "PREREQUISITES" "ERROR" "Podman is not running"
         exit 1
     fi
     
@@ -99,17 +99,17 @@ download_snapshot() {
 check_container() {
     log_step "CONTAINER_CHECK" "START" "Checking if $CONTAINER_NAME container exists"
     
-    if ! docker ps -a --format "table {{.Names}}" | grep -q "^${CONTAINER_NAME}$"; then
+    if ! podman ps -a --format "table {{.Names}}" | grep -q "^${CONTAINER_NAME}$"; then
         log_step "CONTAINER_CHECK" "ERROR" "Container '$CONTAINER_NAME' does not exist"
-        log_step "CONTAINER_CHECK" "INFO" "Start the Tezos node first using docker compose"
+        log_step "CONTAINER_CHECK" "INFO" "Start the Tezos node first using podman-compose"
         exit 1
     fi
     
-    if ! docker ps --format "table {{.Names}}" | grep -q "^${CONTAINER_NAME}$"; then
+    if ! podman ps --format "table {{.Names}}" | grep -q "^${CONTAINER_NAME}$"; then
         log_step "CONTAINER_CHECK" "WARNING" "Container '$CONTAINER_NAME' exists but is not running"
         log_step "CONTAINER_CHECK" "INFO" "Starting container..."
         
-        if docker start "$CONTAINER_NAME"; then
+        if podman start "$CONTAINER_NAME"; then
             log_step "CONTAINER_CHECK" "SUCCESS" "Container started successfully"
         else
             log_step "CONTAINER_CHECK" "ERROR" "Failed to start container"
@@ -125,10 +125,10 @@ stop_node() {
     log_step "NODE_STOP" "START" "Stopping Tezos node for snapshot import"
     
     # Check if node process is running inside container
-    if docker exec "$CONTAINER_NAME" pgrep tezos-node >/dev/null 2>&1; then
+    if podman exec "$CONTAINER_NAME" pgrep tezos-node >/dev/null 2>&1; then
         log_step "NODE_STOP" "INFO" "Tezos node is running, stopping gracefully..."
         
-        if docker exec "$CONTAINER_NAME" pkill -TERM tezos-node; then
+        if podman exec "$CONTAINER_NAME" pkill -TERM tezos-node; then
             # Wait for graceful shutdown
             sleep 10
             log_step "NODE_STOP" "SUCCESS" "Tezos node stopped"
@@ -147,7 +147,7 @@ import_snapshot() {
     log_step "SNAPSHOT_IMPORT" "START" "Importing snapshot into Tezos node"
     
     # Import snapshot with progress monitoring
-    if docker exec -i "$CONTAINER_NAME" tezos-node snapshot import --no-check /dev/stdin < "$snapshot_file" 2>&1 | \
+    if podman exec -i "$CONTAINER_NAME" tezos-node snapshot import --no-check /dev/stdin < "$snapshot_file" 2>&1 | \
        tee -a "$LOG_FILE" | grep -E "(Import|Imported|Error|error)"; then
         log_step "SNAPSHOT_IMPORT" "SUCCESS" "Snapshot imported successfully"
     else
@@ -172,20 +172,20 @@ verify_import() {
     log_step "VERIFICATION" "START" "Verifying snapshot import"
     
     # Start node briefly to check if import was successful
-    if docker exec "$CONTAINER_NAME" tezos-node run --network "$NETWORK" --data-dir /var/lib/tezos &
+    if podman exec "$CONTAINER_NAME" tezos-node run --network "$NETWORK" --data-dir /var/lib/tezos &
     then
         local node_pid=$!
         sleep 10
         
         # Check if node is responding
-        if docker exec "$CONTAINER_NAME" tezos-client bootstrapped >/dev/null 2>&1; then
+        if podman exec "$CONTAINER_NAME" tezos-client bootstrapped >/dev/null 2>&1; then
             log_step "VERIFICATION" "SUCCESS" "Node successfully loaded imported data"
         else
             log_step "VERIFICATION" "WARNING" "Node started but not yet synchronized"
         fi
         
         # Stop the test node
-        docker exec "$CONTAINER_NAME" pkill tezos-node || true
+        podman exec "$CONTAINER_NAME" pkill tezos-node || true
         wait $node_pid 2>/dev/null || true
     else
         log_step "VERIFICATION" "ERROR" "Failed to start node after import"
@@ -212,7 +212,7 @@ main() {
     verify_import
     
     log_step "IMPORT_COMPLETE" "SUCCESS" "Snapshot import completed. You can now start the Tezos node."
-    log_step "IMPORT_COMPLETE" "INFO" "Next step: docker compose -f docker/compose.${NETWORK}.yml up -d"
+    log_step "IMPORT_COMPLETE" "INFO" "Next step: podman-compose up -d"
 }
 
 # Execute main function
