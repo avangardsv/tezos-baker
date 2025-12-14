@@ -1,48 +1,83 @@
-# Demo Project
+# Tezos Baker
 
-## Overview
+Run a Tezos validator in 3 commands.
 
-Development workspace with reusable components and AI workflow management system.
-
-## Project Structure
-
-```
-demo/
-├── README.md                   # This file
-├── scripts/                    # Automation scripts
-│   ├── create-repo.sh          # General repository creation
-│   └── create-cli-repo.sh      # CLI project creation with infrastructure
-├── lib/                        # Shared libraries
-│   └── log.sh                 # Logging utilities
-└── .agents/                    # AI Workflow Management System (separate project)
-    └── (see .agents/README.md for details)
-```
-
-## Available Scripts
-
-### Repository Creation
-- `scripts/create-repo.sh` - Create GitHub repositories with customizable options
-- `scripts/create-cli-repo.sh` - Create CLI applications with full infrastructure
-
-## Usage
-
-### Usage
+## Quick Start (Ghostnet)
 
 ```bash
-# General repository
-./scripts/create-repo.sh --name=my-project --private --clone
+# 1. Setup
+./scripts/setup.sh ghostnet
 
-# CLI application with infrastructure
-./scripts/create-cli-repo.sh --name=my-cli-tool --private
+# 2. Start baking
+./scripts/start.sh alice
+
+# 3. Check status
+./scripts/status.sh
 ```
 
-## AI Workflow Management
+## Structure
 
-This repository includes a separate `.agents/` project for AI workflow management. See `.agents/README.md` for complete documentation on:
+### Scripts (`scripts/`)
+- `setup.sh` - Install and sync node
+- `start.sh` - Register and start baking
+- `stop.sh` - Stop all services
+- `status.sh` - Check health
+- `register_delegate.sh` - Register as delegate
+- `start_baker.sh` - Start baker/endorser
+- `check_sync.sh` - Check node sync
+- `backup_keys.sh` - Backup wallet keys
+- `import_snapshot.sh` - Import blockchain snapshot
+- `clean_node_data.sh` - Clean node data
 
-- AI behavior rules and preferences
-- Logging and tracking systems  
-- Validation tools
-- Cross-project reusability
+### Configuration
+- `docker-compose.yml` - Service definitions
+- `Dockerfile` - Octez build
+- `config-ghostnet.json` - Testnet settings
+- `config-mainnet.json` - Production settings
+- `.env.example` - Configuration template
 
-The agents system is designed as a standalone project that can be copied to any repository for consistent AI-assisted development workflows.
+### Documentation (`docs/`)
+- `ARCHITECTURE.md` - Complete system documentation
+- `STRUCTURE.md` - Repository organization guide
+- `AI_COMPLETE_PROMPT.md` - Comprehensive AI setup prompt
+- `SIMPLIFICATION_ANALYSIS.md` - Simplification options
+- `AI_PROMPTS.md` - AI integration prompts
+- `CONTRIBUTING.md` - Development guidelines
+- `MONITORING.md` - Monitoring setup
+- `SECURITY.md` - Security best practices
+- `RUNBOOK_*.md` - Operational runbooks
+
+## Documentation
+
+Everything you need is in `docs/ARCHITECTURE.md`:
+- System overview
+- Component details
+- Deployment guides
+- AI prompts for extensions
+- Troubleshooting
+
+## Advanced
+
+For monitoring, custom validators, and HA setup:
+- See `docs/ARCHITECTURE.md` "AI Integration" section
+- See `docs/AI_COMPLETE_PROMPT.md` for complete AI setup guide
+- See `docs/SIMPLIFICATION_ANALYSIS.md` for cleanup options
+
+## Network Support
+
+- **Ghostnet** (Testnet): Default, for testing
+- **Mainnet**: Production - requires 6000+ XTZ and proper security
+
+Switch networks by setting `TEZOS_NETWORK` in `.env` file.
+
+## Prerequisites
+
+- Docker and Docker Compose
+- 2+ CPU cores, 4GB RAM, 50GB+ disk (Ghostnet)
+- 4+ CPU cores, 8GB RAM, 100GB+ SSD (Mainnet)
+
+## Notes
+
+- The `agents/` directory (54MB) should be moved to a separate repository for AI workflow tools
+- The `monitoring/` directory is optional and can be enabled with `--profile monitoring`
+- The `security/` directory contains hardening guides for production deployments

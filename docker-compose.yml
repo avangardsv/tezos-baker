@@ -4,7 +4,7 @@ services:
   tezos-node:
     build:
       context: .
-      dockerfile: octez.Dockerfile
+      dockerfile: Dockerfile
       args:
         OCTEZ_VERSION: ${OCTEZ_VERSION:-v20.2}
     container_name: ${CONTAINER_PREFIX:-tezos}-node
@@ -14,9 +14,10 @@ services:
       - "${RPC_PORT:-8732}:8732"  # RPC
       - "${METRICS_PORT:-9095}:9095"  # Metrics
     volumes:
-      - ../data:/var/lib/tezos:Z
-      - ../config:/etc/tezos:ro,Z
-      - ../logs:/var/log/tezos:Z
+      - ./data:/var/lib/tezos:Z
+      - ./config-ghostnet.json:/etc/tezos/ghostnet-config.json:ro,Z
+      - ./config-mainnet.json:/etc/tezos/mainnet-config.json:ro,Z
+      - ./logs:/var/log/tezos:Z
     environment:
       - TEZOS_NETWORK=${TEZOS_NETWORK:-ghostnet}
       - ENABLE_RPC=${ENABLE_RPC:-true}
@@ -46,7 +47,7 @@ services:
   tezos-baker:
     build:
       context: .
-      dockerfile: octez.Dockerfile
+      dockerfile: Dockerfile
       args:
         OCTEZ_VERSION: ${OCTEZ_VERSION:-v20.2}
     container_name: ${CONTAINER_PREFIX:-tezos}-baker
@@ -55,8 +56,8 @@ services:
       tezos-node:
         condition: service_healthy
     volumes:
-      - ../data:/var/lib/tezos:Z
-      - ../logs:/var/log/tezos:Z
+      - ./data:/var/lib/tezos:Z
+      - ./logs:/var/log/tezos:Z
     environment:
       - TEZOS_NETWORK=${TEZOS_NETWORK:-ghostnet}
       - BAKER_ALIAS=${BAKER_ALIAS:-alice}
@@ -95,7 +96,7 @@ services:
   tezos-endorser:
     build:
       context: .
-      dockerfile: octez.Dockerfile
+      dockerfile: Dockerfile
       args:
         OCTEZ_VERSION: ${OCTEZ_VERSION:-v20.2}
     container_name: ${CONTAINER_PREFIX:-tezos}-endorser
@@ -104,8 +105,8 @@ services:
       tezos-node:
         condition: service_healthy
     volumes:
-      - ../data:/var/lib/tezos:Z
-      - ../logs:/var/log/tezos:Z
+      - ./data:/var/lib/tezos:Z
+      - ./logs:/var/log/tezos:Z
     environment:
       - TEZOS_NETWORK=${TEZOS_NETWORK:-ghostnet}
       - BAKER_ALIAS=${BAKER_ALIAS:-alice}
@@ -149,7 +150,7 @@ services:
     ports:
       - "${PROMETHEUS_PORT:-9090}:9090"
     volumes:
-      - ../monitoring/prometheus:/etc/prometheus:ro,Z
+      - ./monitoring/prometheus:/etc/prometheus:ro,Z
       - prometheus-data:/prometheus
     command:
       - '--config.file=/etc/prometheus/prometheus.yml'
@@ -175,7 +176,7 @@ services:
     ports:
       - "${GRAFANA_PORT:-3000}:3000"
     volumes:
-      - ../monitoring/grafana:/etc/grafana/provisioning:ro,Z
+      - ./monitoring/grafana:/etc/grafana/provisioning:ro,Z
       - grafana-data:/var/lib/grafana
     environment:
       - GF_SECURITY_ADMIN_USER=${GRAFANA_ADMIN:-admin}
@@ -201,7 +202,7 @@ services:
     ports:
       - "9093:9093"
     volumes:
-      - ../monitoring/alertmanager:/etc/alertmanager:ro,Z
+      - ./monitoring/alertmanager:/etc/alertmanager:ro,Z
       - alertmanager-data:/alertmanager
     command:
       - '--config.file=/etc/alertmanager/alertmanager.yml'
