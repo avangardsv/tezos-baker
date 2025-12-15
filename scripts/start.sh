@@ -30,15 +30,15 @@ echo "Network: $NETWORK"
 echo ""
 
 # Check if node is running
-if ! podman ps --format "{{.Names}}" | grep -q "tezos-node"; then
+if ! docker ps --format "{{.Names}}" | grep -q "tezos-node"; then
     echo "Error: Tezos node is not running"
-    echo "Start it with: podman-compose up -d"
+    echo "Start it with: docker compose up -d"
     exit 1
 fi
 
 # Check if node is synced
 echo "Checking node sync status..."
-if ! podman exec tezos-node tezos-client bootstrapped >/dev/null 2>&1; then
+if ! docker exec tezos-node octez-client bootstrapped >/dev/null 2>&1; then
     echo "Warning: Node is not fully synced. Continue anyway? (y/n)"
     read -n 1 -r
     echo
@@ -60,15 +60,15 @@ if [ -f "scripts/start_baker.sh" ]; then
     echo "Starting baker and endorser..."
     ./scripts/start_baker.sh "$ACCOUNT_ALIAS" "$NETWORK"
 else
-    # Fallback: use podman-compose
-    echo "Starting baker and endorser via podman-compose..."
-    podman-compose up -d tezos-baker tezos-endorser
+    # Fallback: use docker compose
+    echo "Starting baker and endorser via docker compose..."
+    docker compose up -d tezos-baker tezos-endorser
 fi
 
 echo ""
 echo "=== Baker Started ==="
 echo ""
-echo "Check status: ./status.sh"
-echo "View logs: podman logs -f tezos-baker"
+echo "Check status: ./scripts/status.sh"
+echo "View logs: docker logs -f tezos-baker"
 echo ""
 

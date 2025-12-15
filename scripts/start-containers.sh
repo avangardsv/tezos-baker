@@ -7,24 +7,24 @@ set -euo pipefail
 echo "=== Starting Tezos Containers ==="
 echo ""
 
-# Check if podman-compose is available
-if ! command -v podman-compose >/dev/null 2>&1; then
-    if [ -f "$HOME/Library/Python/3.9/bin/podman-compose" ]; then
-        PODMAN_COMPOSE="$HOME/Library/Python/3.9/bin/podman-compose"
+# Check if docker compose is available
+if ! command -v docker compose >/dev/null 2>&1; then
+    if [ -f "$HOME/Library/Python/3.9/bin/docker compose" ]; then
+        PODMAN_COMPOSE="$HOME/Library/Python/3.9/bin/docker compose"
     else
-        echo "Error: podman-compose not found"
-        echo "Install with: pip3 install podman-compose"
+        echo "Error: docker compose not found"
+        echo "Install with: pip3 install docker compose"
         exit 1
     fi
 else
-    PODMAN_COMPOSE="podman-compose"
+    PODMAN_COMPOSE="docker compose"
 fi
 
-# Use docker-compose.yml if it exists (symlink), otherwise podman-compose.yml
+# Use docker-compose.yml if it exists (symlink), otherwise docker compose.yml
 if [ -f "docker-compose.yml" ]; then
     COMPOSE_FILE="docker-compose.yml"
-elif [ -f "podman-compose.yml" ]; then
-    COMPOSE_FILE="podman-compose.yml"
+elif [ -f "docker compose.yml" ]; then
+    COMPOSE_FILE="docker compose.yml"
 else
     echo "Error: No compose file found"
     exit 1
@@ -43,21 +43,21 @@ sleep 5
 
 echo ""
 echo "=== Container Status ==="
-podman ps --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
+docker ps --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
 
 echo ""
 echo "=== Checking for stopped containers ==="
-STOPPED=$(podman ps -a --format "{{.Names}}\t{{.Status}}" | grep -E "tezos" | grep -v "Up" || true)
+STOPPED=$(docker ps -a --format "{{.Names}}\t{{.Status}}" | grep -E "tezos" | grep -v "Up" || true)
 if [ -n "$STOPPED" ]; then
     echo "Some containers are stopped:"
     echo "$STOPPED"
     echo ""
-    echo "Check logs with: podman logs <container-name>"
+    echo "Check logs with: docker logs <container-name>"
 fi
 
 echo ""
 echo "=== Next Steps ==="
 echo "1. Check status: ./scripts/status.sh"
-echo "2. View logs: podman logs -f tezos-node"
+echo "2. View logs: docker logs -f tezos-node"
 echo "3. Wait for sync (this takes 1-3 hours)"
 

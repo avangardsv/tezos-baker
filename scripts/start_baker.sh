@@ -97,16 +97,16 @@ check_delegate_registration() {
     log_step "DELEGATE_CHECK" "START" "Verifying delegate registration for '$ACCOUNT_ALIAS'"
     
     local address
-    if address=$(docker exec "$CONTAINER_NAME" tezos-client show address "$ACCOUNT_ALIAS" --show-secret 2>/dev/null | grep "Hash:" | awk '{print $2}'); then
+    if address=$(docker exec "$CONTAINER_NAME" octez-client show address "$ACCOUNT_ALIAS" --show-secret 2>/dev/null | grep "Hash:" | awk '{print $2}'); then
         log_step "DELEGATE_CHECK" "INFO" "Account address: $address"
         
         # Check if registered as delegate
-        if docker exec "$CONTAINER_NAME" tezos-client rpc get "/chains/main/blocks/head/context/delegates/$address" >/dev/null 2>&1; then
+        if docker exec "$CONTAINER_NAME" octez-client rpc get "/chains/main/blocks/head/context/delegates/$address" >/dev/null 2>&1; then
             log_step "DELEGATE_CHECK" "SUCCESS" "Account is registered as a delegate"
             
             # Get delegate information
             local delegate_info staking_balance
-            if delegate_info=$(docker exec "$CONTAINER_NAME" tezos-client rpc get "/chains/main/blocks/head/context/delegates/$address" 2>/dev/null); then
+            if delegate_info=$(docker exec "$CONTAINER_NAME" octez-client rpc get "/chains/main/blocks/head/context/delegates/$address" 2>/dev/null); then
                 staking_balance=$(echo "$delegate_info" | jq -r '.staking_balance // "0"' 2>/dev/null || echo "unknown")
                 log_step "DELEGATE_CHECK" "INFO" "Staking balance: $staking_balance"
             fi
@@ -125,7 +125,7 @@ check_delegate_registration() {
 check_node_sync() {
     log_step "SYNC_CHECK" "START" "Checking node synchronization status"
     
-    if docker exec "$CONTAINER_NAME" tezos-client bootstrapped >/dev/null 2>&1; then
+    if docker exec "$CONTAINER_NAME" octez-client bootstrapped >/dev/null 2>&1; then
         log_step "SYNC_CHECK" "SUCCESS" "Node is bootstrapped and synchronized"
     else
         log_step "SYNC_CHECK" "ERROR" "Node is not synchronized"
@@ -177,7 +177,7 @@ start_baker() {
     
     # Determine protocol version
     local protocol
-    if protocol=$(docker exec "$CONTAINER_NAME" tezos-client rpc get /chains/main/blocks/head/protocol 2>/dev/null); then
+    if protocol=$(docker exec "$CONTAINER_NAME" octez-client rpc get /chains/main/blocks/head/protocol 2>/dev/null); then
         log_step "BAKER_START" "INFO" "Current protocol: $protocol"
     fi
     

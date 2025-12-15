@@ -54,8 +54,8 @@ ENV RPC_ADDR=0.0.0.0
 # Volume mount points
 VOLUME ["/var/lib/tezos", "/var/log/tezos", "/etc/tezos"]
 
-# Default command - Octez v20+ uses octez- prefix
-CMD ["octez-node", "run", "--network", "ghostnet", "--data-dir", "/var/lib/tezos"]
+# Default command - Octez v20.3: run node with network and config
+CMD ["octez-node", "run", "--network", "ghostnet", "--data-dir", "/var/lib/tezos", "--config-file", "/etc/tezos/ghostnet-config.json"]
 
 # Metadata
 LABEL maintainer="Tezos Baker Setup"

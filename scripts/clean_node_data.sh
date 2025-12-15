@@ -146,7 +146,7 @@ analyze_data_size() {
         done 2>/dev/null || true
         
         # Check for important files
-        local important_files=("/.tezos-node/identity.json" "/.tezos-node/config.json" "/.tezos-client/secret_keys")
+        local important_files=("/.tezos-node/identity.json" "/.tezos-node/config.json" "/.octez-client/secret_keys")
         for file in "${important_files[@]}"; do
             if docker exec "$CONTAINER_NAME" test -f "$file" 2>/dev/null; then
                 log_step "DATA_ANALYSIS" "INFO" "Found: $file"
@@ -176,8 +176,8 @@ backup_important_files() {
     fi
     
     # Always backup client keys
-    backup_files+=("/.tezos-client/secret_keys")
-    backup_files+=("/.tezos-client/public_keys")
+    backup_files+=("/.octez-client/secret_keys")
+    backup_files+=("/.octez-client/public_keys")
     
     local backed_up_count=0
     for file in "${backup_files[@]}"; do

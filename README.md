@@ -6,47 +6,30 @@ Run a Tezos validator on Ghostnet testnet. Simple setup, minimal configuration.
 
 ### Prerequisites
 
-- **Podman** - Container runtime
-- **podman-compose** - Compose tool for Podman
+- **Docker** - Container runtime
+- **Docker Compose** - Multi-container orchestration tool
 - **System requirements**: 2+ CPU cores, 4GB RAM, 50GB disk space
 
-### Install Podman (macOS)
+### Install Docker (macOS)
 
-**First, install Homebrew if you don't have it:**
+**Option 1: Docker Desktop (Recommended)**
+1. Download Docker Desktop from https://www.docker.com/products/docker-desktop
+2. Install and launch Docker Desktop
+3. Verify installation:
 ```bash
-/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+docker --version
+docker compose version
 ```
 
-**Then install Podman:**
+**Option 2: Homebrew**
 ```bash
-# Install Podman
-brew install podman
+# Install Docker
+brew install --cask docker
 
-# Initialize and start Podman machine
-podman machine init
-podman machine start
-
+# Launch Docker Desktop application
 # Verify installation
-podman --version
-```
-
-### Install podman-compose
-
-```bash
-# macOS/Linux - use pip3
-pip3 install podman-compose
-
-# If command not found, add to PATH (macOS)
-echo 'export PATH="$HOME/Library/Python/3.9/bin:$PATH"' >> ~/.zshrc
-source ~/.zshrc
-
-# Or install via Homebrew (alternative)
-brew install podman-compose
-```
-
-**Verify installation:**
-```bash
-podman-compose --version
+docker --version
+docker compose version
 ```
 
 ### Setup
@@ -71,8 +54,8 @@ Get your baker running in 3 commands:
 ./scripts/setup.sh ghostnet
 
 # 2. Generate keys and fund account
-podman exec tezos-node tezos-client gen keys alice
-podman exec tezos-node tezos-client show address alice
+docker exec tezos-node octez-client gen keys alice
+docker exec tezos-node octez-client show address alice
 # Visit https://faucet.ghostnet.teztnets.xyz/ to fund your address
 
 # 3. Start baking
@@ -89,7 +72,7 @@ podman exec tezos-node tezos-client show address alice
 
 This command:
 - Creates necessary directories (`data/`, `logs/`)
-- Starts Podman containers (node, baker, endorser)
+- Starts Docker containers (node, baker, endorser)
 - Begins blockchain synchronization
 
 **Expected time**: 1-3 hours (with snapshot) or 6-12 hours (full sync)
@@ -119,10 +102,10 @@ Or manually check periodically:
 
 ```bash
 # Generate key pair
-podman exec tezos-node tezos-client gen keys alice
+docker exec tezos-node octez-client gen keys alice
 
 # Get your address
-podman exec tezos-node tezos-client show address alice
+docker exec tezos-node octez-client show address alice
 ```
 
 Copy the `tz1...` address that appears.
@@ -135,7 +118,7 @@ Copy the `tz1...` address that appears.
 4. Wait 1-2 minutes, then verify:
 
 ```bash
-podman exec tezos-node tezos-client get balance for alice
+docker exec tezos-node octez-client get balance for alice
 ```
 
 ### Step 5: Start Baking
@@ -236,47 +219,47 @@ Stops all services gracefully.
 ./scripts/stop.sh
 ```
 
-### Tezos Client Commands
+### Octez Client Commands
 
 All commands run inside the `tezos-node` container:
 
 ```bash
 # Generate keys
-podman exec tezos-node tezos-client gen keys <alias>
+docker exec tezos-node octez-client gen keys <alias>
 
 # Show address
-podman exec tezos-node tezos-client show address <alias>
+docker exec tezos-node octez-client show address <alias>
 
 # Check balance
-podman exec tezos-node tezos-client get balance for <alias>
+docker exec tezos-node octez-client get balance for <alias>
 
 # Register as delegate
-podman exec tezos-node tezos-client register key <alias> as delegate
+docker exec tezos-node octez-client register key <alias> as delegate
 
 # Check sync status
-podman exec tezos-node tezos-client bootstrapped
+docker exec tezos-node octez-client bootstrapped
 
 # Check baking rights
-podman exec tezos-node tezos-client rpc get \
+docker exec tezos-node octez-client rpc get \
   /chains/main/blocks/head/helpers/baking_rights
 ```
 
-### Podman Commands
+### Docker Commands
 
 ```bash
 # View running containers
-podman ps
+docker ps
 
 # View logs
-podman logs -f tezos-node
-podman logs -f tezos-baker
-podman logs -f tezos-endorser
+docker logs -f tezos-node
+docker logs -f tezos-baker
+docker logs -f tezos-endorser
 
 # Restart service
-podman-compose restart tezos-node
+docker compose restart tezos-node
 
 # Stop all services
-podman-compose down
+docker compose down
 ```
 
 ## Troubleshooting
@@ -288,13 +271,13 @@ podman-compose down
 **Solutions**:
 ```bash
 # Check node logs
-podman logs tezos-node
+docker logs tezos-node
 
 # Restart node
-podman-compose restart tezos-node
+docker compose restart tezos-node
 
 # Check network connectivity
-podman exec tezos-node netstat -tulpn | grep 9732
+docker exec tezos-node netstat -tulpn | grep 9732
 ```
 
 ### Baker Won't Start
@@ -308,8 +291,8 @@ podman exec tezos-node netstat -tulpn | grep 9732
 
 **Check**:
 ```bash
-podman logs tezos-baker
-podman exec tezos-node tezos-client show address alice
+docker logs tezos-baker
+docker exec tezos-node octez-client show address alice
 ```
 
 ### No Funds
@@ -319,7 +302,7 @@ podman exec tezos-node tezos-client show address alice
 **Solution**:
 - Request from [Ghostnet Faucet](https://faucet.ghostnet.teztnets.xyz/)
 - Wait 1-2 minutes for transaction to confirm
-- Verify: `podman exec tezos-node tezos-client get balance for alice`
+- Verify: `docker exec tezos-node octez-client get balance for alice`
 
 ### Container Errors
 
@@ -327,14 +310,14 @@ podman exec tezos-node tezos-client show address alice
 
 **Solutions**:
 ```bash
-# Check Podman is running
-podman info
+# Check Docker is running
+docker info
 
 # Rebuild containers
-podman-compose build
+docker compose build
 
 # Check logs
-podman-compose logs
+docker compose logs
 ```
 
 ## Resources
@@ -349,7 +332,7 @@ podman-compose logs
 After your baker is running:
 
 1. **Monitor operations**: Use `./scripts/status.sh` regularly
-2. **Watch logs**: `podman logs -f tezos-baker`
+2. **Watch logs**: `docker logs -f tezos-baker`
 3. **Track on explorer**: Search your address on [ghostnet.tzkt.io](https://ghostnet.tzkt.io/)
 4. **Wait for rights**: First baking rights appear after ~14-21 days
 

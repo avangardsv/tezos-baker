@@ -102,7 +102,7 @@ get_local_head() {
     log_step "LOCAL_HEAD" "START" "Fetching local node head"
     
     local local_head
-    if local_head=$(docker exec "$CONTAINER_NAME" tezos-client rpc get /chains/main/blocks/head/header 2>/dev/null | jq -r '.level' 2>/dev/null); then
+    if local_head=$(docker exec "$CONTAINER_NAME" octez-client rpc get /chains/main/blocks/head/header 2>/dev/null | jq -r '.level' 2>/dev/null); then
         if [[ "$local_head" =~ ^[0-9]+$ ]]; then
             log_step "LOCAL_HEAD" "SUCCESS" "Local head: $local_head"
             echo "$local_head"
@@ -120,7 +120,7 @@ get_local_head() {
 check_bootstrapped() {
     log_step "BOOTSTRAP_CHECK" "START" "Checking if node is bootstrapped"
     
-    if docker exec "$CONTAINER_NAME" tezos-client bootstrapped >/dev/null 2>&1; then
+    if docker exec "$CONTAINER_NAME" octez-client bootstrapped >/dev/null 2>&1; then
         log_step "BOOTSTRAP_CHECK" "SUCCESS" "Node is bootstrapped"
         return 0
     else
@@ -160,7 +160,7 @@ get_sync_stats() {
     
     # Get node status
     local node_status
-    if node_status=$(docker exec "$CONTAINER_NAME" tezos-client rpc get /chains/main/blocks/head 2>/dev/null); then
+    if node_status=$(docker exec "$CONTAINER_NAME" octez-client rpc get /chains/main/blocks/head 2>/dev/null); then
         local timestamp level hash
         timestamp=$(echo "$node_status" | jq -r '.header.timestamp' 2>/dev/null || echo "unknown")
         level=$(echo "$node_status" | jq -r '.header.level' 2>/dev/null || echo "unknown")
@@ -173,7 +173,7 @@ get_sync_stats() {
     
     # Get peer count
     local peer_count
-    if peer_count=$(docker exec "$CONTAINER_NAME" tezos-client rpc get /network/connections 2>/dev/null | jq '. | length' 2>/dev/null); then
+    if peer_count=$(docker exec "$CONTAINER_NAME" octez-client rpc get /network/connections 2>/dev/null | jq '. | length' 2>/dev/null); then
         log_step "SYNC_STATS" "INFO" "Connected peers: $peer_count"
         
         if [ "$peer_count" -lt 5 ]; then
@@ -183,7 +183,7 @@ get_sync_stats() {
     
     # Get mempool size
     local mempool_size
-    if mempool_size=$(docker exec "$CONTAINER_NAME" tezos-client rpc get /chains/main/mempool/pending_operations 2>/dev/null | jq '. | length' 2>/dev/null); then
+    if mempool_size=$(docker exec "$CONTAINER_NAME" octez-client rpc get /chains/main/mempool/pending_operations 2>/dev/null | jq '. | length' 2>/dev/null); then
         log_step "SYNC_STATS" "INFO" "Mempool size: $mempool_size operations"
     fi
 }

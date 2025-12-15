@@ -42,8 +42,8 @@ echo ""
 
 # Check prerequisites
 echo "Checking prerequisites..."
-command -v podman >/dev/null 2>&1 || { echo "Error: podman is required but not installed"; exit 1; }
-command -v podman-compose >/dev/null 2>&1 || { echo "Error: podman-compose is required but not installed. Install with: pip install podman-compose"; exit 1; }
+command -v docker >/dev/null 2>&1 || { echo "Error: docker is required but not installed"; exit 1; }
+command -v docker compose >/dev/null 2>&1 || { echo "Error: docker compose is required but not installed"; exit 1; }
 
 # Create necessary directories
 echo "Creating directories..."
@@ -83,15 +83,12 @@ if [ ! -f "$CONFIG_FILE" ]; then
     exit 1
 fi
 
-# Start Podman services
-echo "Starting Podman services..."
-# podman-compose can use docker-compose.yml or specify with -f
-if [ -f "podman-compose.yml" ]; then
-    podman-compose -f podman-compose.yml up -d
-elif [ -f "docker-compose.yml" ]; then
-    podman-compose up -d
+# Start Docker services
+echo "Starting Docker services..."
+if [ -f "docker-compose.yml" ]; then
+    docker compose up -d
 else
-    echo "Error: No compose file found (podman-compose.yml or docker-compose.yml)"
+    echo "Error: docker-compose.yml not found"
     exit 1
 fi
 
@@ -114,9 +111,9 @@ echo ""
 echo "=== Setup Complete ==="
 echo ""
 echo "Next steps:"
-echo "1. Wait for node to sync: ./status.sh"
-echo "2. Generate keys: podman exec tezos-node tezos-client gen keys alice"
+echo "1. Wait for node to sync: ./scripts/status.sh"
+echo "2. Generate keys: docker exec tezos-node octez-client gen keys alice"
 echo "3. Fund your account (testnet faucet or transfer)"
-echo "4. Register delegate: ./start.sh alice $NETWORK"
+echo "4. Register delegate: ./scripts/start.sh alice $NETWORK"
 echo ""
 

@@ -11,9 +11,9 @@ echo "=== Tezos Baker Status ==="
 echo "Network: $NETWORK"
 echo ""
 
-# Check Podman services
-echo "Podman Services:"
-if podman ps --format "table {{.Names}}\t{{.Status}}" | grep -E "tezos|prometheus|grafana"; then
+# Check Docker services
+echo "Docker Services:"
+if docker ps --format "table {{.Names}}\t{{.Status}}" | grep -E "tezos|prometheus|grafana"; then
     echo ""
 else
     echo "No Tezos services running"
@@ -22,16 +22,18 @@ fi
 
 # Check node sync
 echo "Node Sync Status:"
-if podman ps --format "{{.Names}}" | grep -q "tezos-node"; then
-    if podman exec tezos-node tezos-client bootstrapped >/dev/null 2>&1; then
+if docker ps --format "{{.Names}}" | grep -q "tezos-node"; then
+    if docker exec tezos-node octez-client bootstrapped >/dev/null 2>&1; then
         echo "✓ Node is bootstrapped and synchronized"
-        
+
         # Get head level
-        if HEAD=$(podman exec tezos-node tezos-client rpc get /chains/main/blocks/head/header 2>/dev/null | grep -o '"level":[0-9]*' | cut -d: -f2); then
+        if HEAD=$(docker exec tezos-node octez-client rpc get /chains/main/blocks/head/header 2>/dev/null | grep -o '"level":[0-9]*' | cut -d: -f2); then
             echo "  Current level: $HEAD"
         fi
     else
-        echo "✗ Node is not synchronized"
+        echo "✗ Node is not synchronized (still syncing...)"
+        echo "  Check progress: ./scripts/check-sync-detail.sh"
+        echo "  View logs: docker logs -f tezos-node"
     fi
     
     # Use check_sync script if available
@@ -47,8 +49,8 @@ echo ""
 
 # Check baker process
 echo "Baker Status:"
-if podman ps --format "{{.Names}}" | grep -q "tezos-baker"; then
-    if podman exec tezos-baker pgrep -f "tezos-baker" >/dev/null 2>&1; then
+if docker ps --format "{{.Names}}" | grep -q "tezos-baker"; then
+    if docker exec tezos-baker pgrep -f "octez-baker" >/dev/null 2>&1; then
         echo "✓ Baker process is running"
     else
         echo "✗ Baker process not running"
@@ -61,8 +63,8 @@ echo ""
 
 # Check endorser process
 echo "Endorser Status:"
-if podman ps --format "{{.Names}}" | grep -q "tezos-endorser"; then
-    if podman exec tezos-endorser pgrep -f "tezos-endorser" >/dev/null 2>&1; then
+if docker ps --format "{{.Names}}" | grep -q "tezos-endorser"; then
+    if docker exec tezos-endorser pgrep -f "octez-endorser" >/dev/null 2>&1; then
         echo "✓ Endorser process is running"
     else
         echo "✗ Endorser process not running"
@@ -74,12 +76,12 @@ fi
 echo ""
 
 # Check monitoring (if enabled)
-if podman ps --format "{{.Names}}" | grep -q "prometheus\|grafana"; then
+if docker ps --format "{{.Names}}" | grep -q "prometheus\|grafana"; then
     echo "Monitoring:"
-    if podman ps --format "{{.Names}}" | grep -q "prometheus"; then
+    if docker ps --format "{{.Names}}" | grep -q "prometheus"; then
         echo "  ✓ Prometheus running"
     fi
-    if podman ps --format "{{.Names}}" | grep -q "grafana"; then
+    if docker ps --format "{{.Names}}" | grep -q "grafana"; then
         echo "  ✓ Grafana running (http://localhost:3000)"
     fi
     echo ""
