@@ -1,4 +1,4 @@
-ARG OCTEZ_VERSION=octez-v20.3
+ARG OCTEZ_VERSION=octez-v23.1
 FROM tezos/tezos:${OCTEZ_VERSION}
 
 # Build arguments
@@ -54,7 +54,7 @@ ENV RPC_ADDR=0.0.0.0
 # Volume mount points
 VOLUME ["/var/lib/tezos", "/var/log/tezos", "/etc/tezos"]
 
-# Default command - Octez v20.3: run node with network and config
+# Default command - Octez v23.1: run node with network and config
 CMD ["octez-node", "run", "--network", "ghostnet", "--data-dir", "/var/lib/tezos", "--config-file", "/etc/tezos/ghostnet-config.json"]
 
 # Metadata

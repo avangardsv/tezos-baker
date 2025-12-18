@@ -11,6 +11,9 @@ node_modules
 # OS
 .DS_Store
 Thumbs.db
+# Snapshots and backups (ignore directory, but allow README)
+backups/
+!backups/README.md
 
 # Env
 .env

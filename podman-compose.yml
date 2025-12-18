@@ -1,0 +1,167 @@
+services:
+  tezos-node:
+    image: tezos/tezos:${OCTEZ_VERSION:-octez-v23.1}
+    container_name: ${CONTAINER_PREFIX:-tezos}-node
+    restart: ${RESTART_POLICY:-unless-stopped}
+    ports:
+      - "${P2P_PORT:-9732}:9732"  # P2P
+      - "${RPC_PORT:-8732}:8732"  # RPC
+      - "${METRICS_PORT:-9095}:9095"  # Metrics
+    volumes:
+      - ./data:/var/run/tezos/node:Z
+      - ./logs:/var/log/tezos:Z
+    environment:
+      - TZ=${TZ:-UTC}
+    command: octez-node --network ${TEZOS_NETWORK:-ghostnet} --history-mode ${HISTORY_MODE:-rolling} --rpc-addr 0.0.0.0:8732 --metrics-addr 0.0.0.0:9095
+    healthcheck:
+      test: ["CMD", "octez-client", "bootstrapped"]
+      interval: ${HEALTH_CHECK_INTERVAL:-30}s
+      timeout: ${HEALTH_CHECK_TIMEOUT:-10}s
+      retries: ${HEALTH_CHECK_RETRIES:-3}
+      start_period: 120s
+    networks:
+      - tezos-network
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  tezos-baker:
+    image: tezos/tezos:${OCTEZ_VERSION:-octez-v23.1}
+    container_name: ${CONTAINER_PREFIX:-tezos}-baker
+    restart: ${RESTART_POLICY:-unless-stopped}
+    depends_on:
+      tezos-node:
+        condition: service_healthy
+    volumes:
+      - ./data:/var/run/tezos/node:Z
+      - ./logs:/var/log/tezos:Z
+    environment:
+      - NODE_RPC_SCHEME=http
+      - NODE_RPC_ADDR=tezos-node:8732
+      - TZ=${TZ:-UTC}
+    command: octez-baker-${PROTOCOL:-PsQuebec} run with local node /var/run/tezos/node ${BAKER_ALIAS:-alice}
+    healthcheck:
+      test: ["CMD", "pgrep", "-f", "octez-baker"]
+      interval: 60s
+      timeout: 10s
+      retries: 3
+      start_period: 120s
+    networks:
+      - tezos-network
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+
+  # Monitoring services (conditional)
+  prometheus:
+    image: prom/prometheus:v2.47.0
+    container_name: ${CONTAINER_PREFIX:-tezos}-prometheus
+    restart: ${RESTART_POLICY:-unless-stopped}
+    ports:
+      - "${PROMETHEUS_PORT:-9090}:9090"
+    volumes:
+      - ./monitoring/prometheus:/etc/prometheus:ro,Z
+      - prometheus-data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--storage.tsdb.retention.time=15d'
+      - '--web.enable-lifecycle'
+    profiles:
+      - monitoring
+    networks:
+      - tezos-network
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "5m"
+        max-file: "2"
+
+  grafana:
+    image: grafana/grafana:10.1.0
+    container_name: ${CONTAINER_PREFIX:-tezos}-grafana
+    restart: ${RESTART_POLICY:-unless-stopped}
+    ports:
+      - "${GRAFANA_PORT:-3000}:3000"
+    volumes:
+      - ./monitoring/grafana:/etc/grafana/provisioning:ro,Z
+      - grafana-data:/var/lib/grafana
+    environment:
+      - GF_SECURITY_ADMIN_USER=${GRAFANA_ADMIN:-admin}
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASS:-change_me_secure}
+      - GF_INSTALL_PLUGINS=grafana-clock-panel,grafana-simple-json-datasource
+      - GF_USERS_ALLOW_SIGN_UP=false
+    profiles:
+      - monitoring
+    depends_on:
+      - prometheus
+    networks:
+      - tezos-network
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "5m"
+        max-file: "2"
+
+  alertmanager:
+    image: prom/alertmanager:v0.25.0
+    container_name: ${CONTAINER_PREFIX:-tezos}-alertmanager
+    restart: ${RESTART_POLICY:-unless-stopped}
+    ports:
+      - "9093:9093"
+    volumes:
+      - ./monitoring/alertmanager:/etc/alertmanager:ro,Z
+      - alertmanager-data:/alertmanager
+    command:
+      - '--config.file=/etc/alertmanager/alertmanager.yml'
+      - '--storage.path=/alertmanager'
+    profiles:
+      - monitoring
+    networks:
+      - tezos-network
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "5m"
+        max-file: "2"
+
+  # Node exporter for system metrics
+  node-exporter:
+    image: prom/node-exporter:v1.6.1
+    container_name: ${CONTAINER_PREFIX:-tezos}-node-exporter
+    restart: ${RESTART_POLICY:-unless-stopped}
+    ports:
+      - "9100:9100"
+    command:
+      - '--path.rootfs=/host'
+    volumes:
+      - '/:/host:ro,rslave'
+    profiles:
+      - monitoring
+    networks:
+      - tezos-network
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "5m"
+        max-file: "2"
+
+volumes:
+  prometheus-data:
+    driver: local
+  grafana-data:
+    driver: local
+  alertmanager-data:
+    driver: local
+
+networks:
+  tezos-network:
+    driver: bridge
+    name: tezos-ghostnet
