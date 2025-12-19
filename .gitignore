@@ -1,28 +1,26 @@
-node_modules
-
-# Output
-.output
-.vercel
-.netlify
-.wrangler
-/.svelte-kit
-/build
-
-# OS
-.DS_Store
-Thumbs.db
-# Snapshots and backups (ignore directory, but allow README)
+# Data directories
+data/
 backups/
-!backups/README.md
 
-# Env
+# Environment
 .env
-.env.*
-!.env.example
-!.env.test
 
-# Vite
-vite.config.js.timestamp-*
-vite.config.ts.timestamp-*
-.agents/*agents/
-data
+# Documentation (not ready for git yet)
+docs/
+
+# Node modules
+node_modules/
+
+# MacOS
+.DS_Store
+
+# Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Logs
+*.log
+logs/

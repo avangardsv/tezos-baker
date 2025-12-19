@@ -276,6 +276,43 @@ This setup is for **Ghostnet testnet only**:
 - ✅ Keys stored in container (fine for testnet)
 - ❌ **NOT suitable for mainnet** (requires hardware wallet, security hardening)
 
+---
+
+## Security
+
+⚠️ **Testnet:** Current RPC is open (0.0.0.0) - acceptable for testing
+❌ **Mainnet:** Open RPC is dangerous - configure strict ACL before production
+
+### Quick Security Check
+
+```bash
+# Configure RPC ACL (Interactive)
+npm run security:configure-acl
+
+# Verify production readiness
+npm run verify
+```
+
+### Mainnet Security Requirements
+
+**Essential for mainnet:**
+- RPC ACL: Localhost only or whitelist specific IPs
+- Firewall: Enabled (block RPC port 8732 externally)
+- Baker keys: Hardware wallet (Ledger) or remote signer
+- SSH: Key-based authentication only
+- Monitoring: Alerts for downtime/missed slots
+
+**Example secure RPC config:**
+```json
+{
+  "rpc": {
+    "listen-addrs": ["127.0.0.1:8732"]  // Localhost only
+  }
+}
+```
+
+---
+
 ## API Reference
 
 ### npm Scripts Reference
@@ -308,6 +345,15 @@ npm run baker:start          # Start baker
 npm run baker:stop           # Stop baker
 npm run baker:logs           # View baker logs
 npm run baker:rights         # Check baking rights
+
+# Monitoring & Diagnostics
+npm run monitor              # Show node status dashboard
+npm run monitor:watch        # Auto-refreshing dashboard
+npm run verify               # Production readiness check
+npm run block:inspect        # Inspect block contents
+
+# Security
+npm run security:configure-acl  # Interactive RPC ACL configuration
 
 # Utilities
 npm run ps                   # Show all Tezos containers
