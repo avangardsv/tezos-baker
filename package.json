@@ -34,6 +34,7 @@
     "baker:logs": ". ./.env 2>/dev/null || true && docker logs -f ${CONTAINER_PREFIX:-tezos}-baker",
     "baker:status": "./scripts/baker-status.sh",
     "baker:rights": "npm run env && . ./.env && docker exec ${CONTAINER_PREFIX:-tezos}-node octez-client --endpoint http://${RPC_ADDR:-127.0.0.1}:${RPC_PORT:-8732} rpc get /chains/main/blocks/head/helpers/baking_rights",
+    "start": "./scripts/after-reboot.sh",
     "setup": "npm run node:init && npm run node:identity && npm run node:version && echo 'Setup complete! Run: npm run node:start'",
     "setup:snapshot": "npm run setup && npm run snapshot:download && echo 'Download complete! Stop node, run: npm run snapshot:import, then restart'",
     "clean": ". ./.env 2>/dev/null || true && docker rm -f ${CONTAINER_PREFIX:-tezos}-node ${CONTAINER_PREFIX:-tezos}-baker 2>/dev/null || true",

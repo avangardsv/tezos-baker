@@ -313,11 +313,57 @@ npm run verify
 
 ---
 
+## After Reboot / System Restart
+
+When you restart your laptop, Docker containers stop automatically. Use this single command to restart everything:
+
+```bash
+npm start
+```
+
+**What it does:**
+1. Cleans up stopped containers
+2. Starts Tezos node
+3. Waits for node initialization
+4. Checks for baking rights
+5. Starts baker automatically (if you have baking rights)
+
+**Manual steps (if preferred):**
+```bash
+# 1. Start node
+npm run node:start
+
+# 2. Wait 10 seconds for node to initialize
+sleep 10
+
+# 3. Check if you have baking rights
+npm run baker:status
+
+# 4. If you have baking rights, start baker
+npm run baker:start
+
+# 5. Verify everything is running
+npm run ps
+npm run monitor
+```
+
+**Quick verification:**
+```bash
+npm run monitor          # Shows current sync status
+npm run baker:status     # Shows if baker is ready
+docker ps                # Shows running containers
+```
+
+---
+
 ## API Reference
 
 ### npm Scripts Reference
 
 ```bash
+# Quick Start
+npm start                    # Start everything after reboot (recommended)
+
 # Setup & Initialization
 npm run setup                # Initialize node configuration and identity
 npm run setup:snapshot       # Setup + download snapshot
@@ -344,7 +390,8 @@ npm run delegate:register    # Register as delegate
 npm run baker:start          # Start baker
 npm run baker:stop           # Stop baker
 npm run baker:logs           # View baker logs
-npm run baker:rights         # Check baking rights
+npm run baker:status         # Check baker registration & rights status
+npm run baker:rights         # Check upcoming baking rights
 
 # Monitoring & Diagnostics
 npm run monitor              # Show node status dashboard
