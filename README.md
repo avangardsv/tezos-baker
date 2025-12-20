@@ -204,7 +204,7 @@ docker exec tezos-node octez-client --endpoint http://127.0.0.1:8732 register ke
 docker run -d --name tezos-baker \
   --network container:tezos-node \
   -v "$PWD/data:/var/run/tezos/node" \
-  --entrypoint octez-baker-PsQuebec \
+  --entrypoint octez-baker-PtSeouLo \
   tezos/tezos:octez-v23.1 \
   run with local node /var/run/tezos/node alice
 ```
@@ -567,7 +567,7 @@ All settings are in `.env`.
 - **Required for npm scripts**:
   - `TEZOS_NETWORK=ghostnet`
   - `OCTEZ_VERSION=octez-v23.1`
-  - `PROTOCOL=PsQuebec`
+- `PROTOCOL=PtSeouLo`
   - `CONTAINER_PREFIX=tezos`
   - `DATA_DIR=./data`
   - `BACKUP_DIR=./backups`

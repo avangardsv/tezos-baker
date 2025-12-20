@@ -36,12 +36,13 @@ services:
         condition: service_healthy
     volumes:
       - ./data:/var/run/tezos/node:Z
+      - ./data/.tezos-client:/home/tezos/.tezos-client:Z
       - ./logs:/var/log/tezos:Z
     environment:
       - NODE_RPC_SCHEME=http
       - NODE_RPC_ADDR=tezos-node:8732
       - TZ=${TZ:-UTC}
-    command: octez-baker-${PROTOCOL:-PsQuebec} run with local node /var/run/tezos/node ${BAKER_ALIAS:-alice}
+    command: octez-baker-${PROTOCOL:-PtSeouLo} run with local node /var/run/tezos/node --without-dal --liquidity-baking-toggle-vote pass ${BAKER_ALIAS:-alice}
     healthcheck:
       test: ["CMD", "pgrep", "-f", "octez-baker"]
       interval: 60s
