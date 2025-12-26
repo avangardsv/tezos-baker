@@ -19,3 +19,4 @@ docker ps -a --format "table {{.Names}}\t{{.Status}}\t{{.ExitCode}}" | grep tezo
 
 
 
+

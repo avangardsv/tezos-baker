@@ -121,3 +121,4 @@ echo -e "  ${GREEN}npm run node:peers${NC}    - List all peers"
 echo -e "  ${GREEN}npm run monitor:watch${NC} - Auto-refresh this view"
 echo -e "${BLUE}────────────────────────────────────────────────────────${NC}"
 
+
