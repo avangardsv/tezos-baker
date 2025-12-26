@@ -567,6 +567,72 @@ docker logs tezos-baker
 docker exec tezos-node octez-client show address alice
 ```
 
+### Baker Deactivated
+
+**Symptoms**:
+- `npm run baker:status` shows `"deactivated": true`
+- No baking rights despite waiting 5+ cycles
+- Baker was working before but stopped
+
+**Cause**:
+Bakers are automatically deactivated if they don't participate in attestations during their grace period (~5 cycles). This commonly happens when:
+- Baker was registered but node went offline for extended period
+- Node was syncing during the grace period
+- Baker process wasn't running when you had attestation rights
+
+**Solution - Re-register as Delegate**:
+
+```bash
+# 1. Verify baker is deactivated
+curl -s "http://127.0.0.1:8732/chains/main/blocks/head/context/delegates/tz1YourAddress" | jq '{deactivated, grace_period}'
+
+# 2. Ensure node is fully synced
+npm run monitor  # Check timestamp is recent
+
+# 3. Re-register
+npm run delegate:register
+
+# 4. Verify re-activation (wait 30 seconds)
+curl -s "http://127.0.0.1:8732/chains/main/blocks/head/context/delegates/tz1YourAddress" | jq '{deactivated, grace_period}'
+# Should show: "deactivated": false
+
+# 5. Restart baker
+npm run baker:stop
+npm run baker:start
+```
+
+**After re-registration**: You'll need to wait another ~5 cycles for new baking rights to be assigned.
+
+---
+
+### Wallet Not Found / "no public key hash alias" Error
+
+**Symptoms**:
+```
+Error: no public key hash alias named alice
+```
+
+**Cause**: The `octez-client` commands don't specify the wallet data directory location.
+
+**Solution**: Already fixed in current `package.json`. If you see this error, ensure your npm scripts include the `-d /var/run/tezos/node/.tezos-client` flag:
+
+```json
+{
+  "account:show": "... octez-client -d /var/run/tezos/node/.tezos-client --endpoint ..."
+}
+```
+
+**Manual check**:
+```bash
+# This should work
+docker exec tezos-node octez-client -d /var/run/tezos/node/.tezos-client list known addresses
+
+# This will fail (missing -d flag)
+docker exec tezos-node octez-client list known addresses
+```
+
+---
+
 ### No Funds
 
 **Symptoms**: Balance shows 0
@@ -574,7 +640,7 @@ docker exec tezos-node octez-client show address alice
 **Solution**:
 - Request from [Ghostnet Faucet](https://faucet.ghostnet.teztnets.xyz/)
 - Wait 1-2 minutes for transaction to confirm
-- Verify: `docker exec tezos-node octez-client get balance for alice`
+- Verify: `npm run account:balance`
 
 ### Container Errors
 
