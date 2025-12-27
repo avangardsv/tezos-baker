@@ -673,6 +673,209 @@ rm -rf backups/*
 # Start over from Quick Start step 1
 ```
 
+## Production Readiness
+
+This section outlines the gap between the current Ghostnet testnet setup and a production-ready mainnet deployment.
+
+### ✅ Already Production-Ready
+
+**Scripts & Automation:**
+- Complete npm script suite for all operations
+- Automated startup after reboot (`npm start`)
+- Comprehensive monitoring and status checking
+- Troubleshooting documentation and recovery procedures
+
+**Infrastructure:**
+- Docker containerization
+- Rolling history mode (efficient disk usage)
+- Resource limits configured
+- Health checks implemented
+- Backup directory structure
+
+### ⚠️ Critical Changes for Mainnet
+
+#### 1. Network Configuration
+```bash
+# .env changes:
+TEZOS_NETWORK=mainnet
+PROTOCOL=PtSeouLo  # (or current mainnet protocol)
+```
+
+#### 2. Hardware Security Module (REQUIRED)
+**Current:** Software wallet in container (testnet only)
+**Production:** Ledger hardware wallet required
+
+```bash
+USE_LEDGER=true
+LEDGER_PATH=/dev/hidraw0
+```
+
+**Why critical:** Software wallets are vulnerable to compromise. Mainnet requires Ledger Nano X/S for key security.
+
+#### 3. Minimum Stake
+- **Testnet:** 11,999 ꜩ (free testnet tokens)
+- **Mainnet:** 6,000+ XTZ minimum
+- **Current value:** ~$22,000-30,000 USD (varies with XTZ price)
+
+#### 4. Infrastructure: 24/7 Uptime Required
+**Current:** Running on laptop (sleeps, closes, offline)
+**Production:** Dedicated server with 99.9%+ uptime
+
+**Options:**
+- **VPS:** $20-80/month (DigitalOcean, Linode, Vultr, Hetzner)
+  - Specs: 4+ cores, 8GB+ RAM, 200GB+ SSD
+- **Bare Metal:** $50-150/month (better performance)
+- **Home Server:** $500-1000 one-time + UPS ($100-200)
+  - Requires reliable internet, static IP, UPS for power protection
+
+#### 5. RPC Security Hardening
+```json
+// Current (testnet - open access):
+"rpc": {
+  "listen-addrs": ["0.0.0.0:8732"],
+  "acl": [{"address": "0.0.0.0", "blacklist": []}]
+}
+
+// Production (localhost only):
+"rpc": {
+  "listen-addrs": ["127.0.0.1:8732"],
+  "acl": [{"address": "127.0.0.1", "blacklist": []}]
+}
+```
+
+#### 6. Firewall Configuration
+```bash
+# Allow only:
+# - SSH (port 22): Your IP only
+# - P2P (port 9732): Anywhere (required for baking)
+# - RPC (port 8732): BLOCK external (localhost only)
+```
+
+#### 7. Remote Signer (Recommended)
+Separate baker (hot) from keys (cold):
+- **Baker server:** Runs node/baker, no keys
+- **Signer server:** Holds Ledger, signs operations
+- Communication over SSH tunnel or VPN
+
+**Benefit:** Even if baker server is compromised, keys remain safe.
+
+### 🔧 Production Hardening Checklist
+
+**Security:**
+- [ ] Ledger hardware wallet purchased and set up
+- [ ] Remote signer configured (optional but recommended)
+- [ ] SSH key-only authentication (disable password)
+- [ ] Firewall rules configured (ufw/iptables)
+- [ ] RPC ACL restricted to 127.0.0.1
+- [ ] Fail2ban installed (brute force protection)
+- [ ] OS security updates automated
+
+**Monitoring & Alerts:**
+- [ ] Prometheus + Grafana dashboard
+- [ ] Alert notifications (Slack/email/PagerDuty)
+- [ ] Monitor: node sync, baker health, balance, missed attestations
+- [ ] External uptime monitoring (UptimeRobot, etc.)
+
+**Backup & Recovery:**
+- [ ] Automated wallet backup (encrypted)
+- [ ] Identity and config backup
+- [ ] Recovery procedure tested
+- [ ] Backups stored offsite (encrypted S3/private repo)
+
+**Operational:**
+- [ ] VPS/server with 99.9%+ uptime SLA
+- [ ] DNS name for server (easier management)
+- [ ] Log rotation configured
+- [ ] Disk space monitoring and alerts
+- [ ] Resource usage alerts (CPU/RAM/disk)
+
+### 💰 Cost Estimate
+
+**One-time:**
+- XTZ stake: $22,000-30,000 (6,000 XTZ minimum)
+- Ledger Nano X: $150
+- Setup time: 2-3 days
+
+**Monthly:**
+- VPS: $20-80
+- Monitoring (optional): $0-20
+- **Total:** $20-100/month
+
+**Expected Returns:**
+- Baking rewards: ~5-6% APY on stake
+- On 6,000 XTZ: ~300 XTZ/year (~$1,050-1,500/year)
+- Monthly: ~$90-125
+- **Net profit after costs:** ~$50-100/month
+
+### 🎯 Production Migration Path
+
+**Phase 1: Validate on Ghostnet** (Current)
+- ✅ Scripts tested and working
+- ✅ Node sync working
+- ✅ Baker registration successful
+- 🔄 Waiting for first attestations/baking (proof of concept)
+
+**Phase 2: Security Hardening** (2-3 days)
+- Purchase Ledger Nano X
+- Set up VPS with firewall rules
+- Configure remote signer (if using)
+- Test Ledger integration on Ghostnet
+- Document disaster recovery procedures
+
+**Phase 3: Mainnet Preparation** (1-2 weeks)
+- Acquire 6,000+ XTZ
+- Transfer to Ledger wallet
+- Update .env for mainnet
+- Deploy to production VPS
+- Import mainnet snapshot
+- Set up monitoring/alerting
+
+**Phase 4: Go Live** (Day 1)
+- Register as mainnet delegate
+- Start baker
+- Monitor continuously for 24 hours
+- Wait ~5 cycles (15 days) for baking rights
+
+**Phase 5: Ongoing Operations**
+- Daily: `npm run monitor`
+- Weekly: Review logs, check balance
+- Monthly: Review performance, update software
+
+### ⚠️ Key Risks
+
+1. **Deactivation:** Missing attestations = automatic deactivation (lose rewards, must re-register)
+2. **Server downtime:** Each hour offline = missed attestations
+3. **Key loss:** Lose Ledger seed phrase = lose all staked XTZ (BACKUP SEED PHRASE!)
+4. **Capital requirement:** Need $22k-30k in XTZ for minimum stake
+5. **Protocol changes:** Future protocols may add slashing (currently no slashing on Tezos)
+
+### 📊 Production Readiness Gap
+
+| Component | Current State | Production Ready | Gap |
+|-----------|---------------|------------------|-----|
+| Scripts | ✅ Complete | ✅ | None |
+| Node | ✅ Running (laptop) | ⚠️ Need VPS | Medium |
+| Baker | ✅ Running | ⚠️ Need 24/7 uptime | Medium |
+| Wallet | ✅ Software | ❌ Need Ledger | **Critical** |
+| Security | ⚠️ Basic | ❌ Need hardening | **High** |
+| Monitoring | ✅ Manual scripts | ⚠️ Need automated alerts | Medium |
+| Backup | ⚠️ Manual | ❌ Need automated | High |
+| Network | ✅ Ghostnet | ⚠️ Need mainnet config | Low (config only) |
+| Stake | ✅ Testnet tokens | ❌ Need 6,000 XTZ | **Critical** |
+
+**Overall Production Readiness: ~60%**
+
+**Time to Production:** 2-4 weeks (assuming capital available)
+
+**Next Steps for Mainnet:**
+1. Order Ledger Nano X (~$150, 1 week delivery)
+2. Choose VPS provider, provision server (~$20-80/month)
+3. Set up Ledger, test on Ghostnet first
+4. Acquire XTZ stake (6,000+ XTZ)
+5. Deploy to mainnet with security hardening
+
+---
+
 ## Configuration
 
 All settings are in `.env`.
