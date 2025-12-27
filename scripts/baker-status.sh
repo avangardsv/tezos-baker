@@ -20,14 +20,14 @@ echo ""
 # Get baker address
 echo "📋 BAKER ACCOUNT"
 echo "────────────────────────────────────────────────────────────"
-BAKER_INFO=$(docker exec "$CONTAINER" octez-client --endpoint "$RPC_ENDPOINT" show address "$BAKER_ALIAS" 2>&1 | grep -v "Warning" | grep -v "NOT the Tezos" | grep -v "Do NOT use")
+BAKER_INFO=$(docker exec "$CONTAINER" octez-client -d /var/run/tezos/node/.tezos-client --endpoint "$RPC_ENDPOINT" show address "$BAKER_ALIAS" 2>&1 | grep -v "Warning" | grep -v "NOT the Tezos" | grep -v "Do NOT use")
 BAKER_ADDR=$(echo "$BAKER_INFO" | grep "Hash:" | awk '{print $2}')
 echo "  Alias:   $BAKER_ALIAS"
 echo "  Address: $BAKER_ADDR"
 echo ""
 
 # Get balance
-BALANCE=$(docker exec "$CONTAINER" octez-client --endpoint "$RPC_ENDPOINT" get balance for "$BAKER_ALIAS" 2>&1 | grep -v "Warning" | grep -v "NOT the Tezos" | grep -v "Do NOT use" | tr -d '\n')
+BALANCE=$(docker exec "$CONTAINER" octez-client -d /var/run/tezos/node/.tezos-client --endpoint "$RPC_ENDPOINT" get balance for "$BAKER_ALIAS" 2>&1 | grep -v "Warning" | grep -v "NOT the Tezos" | grep -v "Do NOT use" | tr -d '\n')
 echo "  Balance: $BALANCE"
 echo ""
 
