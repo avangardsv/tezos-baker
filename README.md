@@ -458,9 +458,31 @@ docker compose down
 
 **Symptoms**: `Error: The server doesn't authorize this endpoint (ACL filtering)`
 
-**Cause**: The node's RPC server is in "Secure" mode, blocking certain endpoints like `/monitor/bootstrapped`.
+**Cause**: The node's RPC server is in "Secure" mode, blocking certain endpoints like `/monitor/bootstrapped` that the baker needs.
 
-**Solution**: Add an ACL policy to your `data/config.json`:
+**When This Happens:**
+1. **After running `npm run node:init`** - This command regenerates `data/config.json` from scratch **without ACL configuration**
+2. **After fresh setup** - Initial config doesn't include ACL by default
+3. **After snapshot re-import** - If you cleaned the data directory and re-initialized
+
+**Automatic Fix (Recommended):**
+
+The `npm start` command (runs `after-reboot.sh`) now **automatically checks and restores ACL** if missing. Just run:
+
+```bash
+npm start
+```
+
+The script will:
+- Detect missing ACL in config.json
+- Add ACL configuration automatically
+- Restart node to apply changes
+- Continue with baker startup
+
+**Manual Fix:**
+
+If you need to add ACL manually, edit `data/config.json`:
+
 ```json
 {
   "rpc": {
@@ -475,11 +497,15 @@ docker compose down
 }
 ```
 
-Then restart the node:
+Then restart:
 ```bash
-docker rm -f tezos-node
-# Run the start node command again
+npm run node:stop
+npm run node:start
 ```
+
+**⚠️ IMPORTANT:** Every time you run `npm run node:init`, the ACL configuration is lost and must be restored. Either:
+- Use `npm start` which auto-restores ACL
+- Manually edit config.json and add ACL back
 
 ### Node Won't Sync / "Insufficient History" Errors
 
@@ -522,8 +548,12 @@ npm run snapshot:import
 rm -f data/identity.json  # Remove any cached identity
 npm run node:identity
 
-# 7. Start node
-npm run node:start
+# 7. Start node and baker (auto-restores ACL)
+npm start
+# NOTE: Use 'npm start' instead of 'npm run node:start' because:
+#   - Step 3 (node:init) removed ACL from config.json
+#   - 'npm start' automatically detects and restores ACL
+#   - Then starts baker if you have baking rights
 
 # 8. Verify success
 npm run node:logs
