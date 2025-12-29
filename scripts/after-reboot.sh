@@ -66,11 +66,33 @@ else
 fi
 echo ""
 
-echo "🎲 STEP 5: Checking for baking rights"
+echo "🔧 STEP 5: Checking RPC ACL configuration"
+echo "────────────────────────────────────────────────────────────"
+# Check if config.json has ACL configured
+if ! grep -q '"acl"' "${DATA_DIR:-data}/config.json" 2>/dev/null; then
+    echo "  ⚠️  ACL not found in config.json - adding it now"
+    echo "     (This is needed for baker to access /monitor/bootstrapped endpoint)"
+
+    # Backup current config
+    cp "${DATA_DIR:-data}/config.json" "${DATA_DIR:-data}/config.json.bak"
+
+    # Add ACL using jq
+    jq '.rpc.acl = [{"address": "0.0.0.0", "blacklist": []}]' "${DATA_DIR:-data}/config.json" > "${DATA_DIR:-data}/config.json.tmp"
+    mv "${DATA_DIR:-data}/config.json.tmp" "${DATA_DIR:-data}/config.json"
+
+    echo "  ✅ ACL configuration added - restarting node to apply"
+    docker restart "$CONTAINER" > /dev/null
+    sleep 5
+else
+    echo "  ✅ ACL configuration present"
+fi
+echo ""
+
+echo "🎲 STEP 6: Checking for baking rights"
 echo "────────────────────────────────────────────────────────────"
 sleep 2  # Give RPC a bit more time
 
-BAKER_ADDR=$(docker exec "$CONTAINER" octez-client --endpoint "$RPC_ENDPOINT" show address ${BAKER_ALIAS:-alice} 2>/dev/null | grep "Hash:" | awk '{print $2}')
+BAKER_ADDR=$(docker exec "$CONTAINER" octez-client -d /var/run/tezos/node/.tezos-client --endpoint "$RPC_ENDPOINT" show address ${BAKER_ALIAS:-alice} 2>/dev/null | grep "Hash:" | awk '{print $2}')
 
 if [ -n "$BAKER_ADDR" ]; then
     RIGHTS=$(curl -s "$RPC_ENDPOINT/chains/main/blocks/head/helpers/baking_rights?delegate=$BAKER_ADDR&max_round=10" 2>/dev/null)
@@ -79,7 +101,7 @@ if [ -n "$BAKER_ADDR" ]; then
     if [ "$RIGHTS_COUNT" -gt 0 ]; then
         echo "  ✅ You have baking rights!"
         echo ""
-        echo "🔥 STEP 6: Starting baker"
+        echo "🔥 STEP 7: Starting baker"
         echo "────────────────────────────────────────────────────────────"
 
         docker run -d --name "$BAKER_CONTAINER" \
