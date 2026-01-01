@@ -24,17 +24,13 @@ jobs:
             exit 0
           fi
 
-          # Read status file
-          STATUS=$(cat logs/node-status.json)
-          echo "status=$STATUS" >> $GITHUB_OUTPUT
-
-          # Parse JSON
-          ALERT_LEVEL=$(echo "$STATUS" | jq -r '.alert_level')
-          ALERT_MESSAGE=$(echo "$STATUS" | jq -r '.alert_message')
-          TIMESTAMP=$(echo "$STATUS" | jq -r '.timestamp')
-          PEERS=$(echo "$STATUS" | jq -r '.peers')
-          ERRORS=$(echo "$STATUS" | jq -r '.errors_last_10min')
-          WARNINGS=$(echo "$STATUS" | jq -r '.warnings_last_10min')
+          # Parse JSON from status file
+          ALERT_LEVEL=$(jq -r '.alert_level' logs/node-status.json)
+          ALERT_MESSAGE=$(jq -r '.alert_message' logs/node-status.json)
+          TIMESTAMP=$(jq -r '.timestamp' logs/node-status.json)
+          PEERS=$(jq -r '.peers' logs/node-status.json)
+          ERRORS=$(jq -r '.errors_last_10min' logs/node-status.json)
+          WARNINGS=$(jq -r '.warnings_last_10min' logs/node-status.json)
 
           echo "alert_level=$ALERT_LEVEL" >> $GITHUB_OUTPUT
           echo "alert_message=$ALERT_MESSAGE" >> $GITHUB_OUTPUT
