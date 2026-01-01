@@ -38,6 +38,7 @@ if [ -f .env ]; then
 fi
 
 CONTAINER="${CONTAINER_PREFIX:-tezos}-node"
+RPC_ENDPOINT="http://${RPC_ADDR:-127.0.0.1}:${RPC_PORT:-8732}"
 STATUS_FILE="logs/node-status.json"
 TEMP_LOG="/tmp/tezos-health-check.log"
 
@@ -51,25 +52,19 @@ echo -e "${BOLD}  TEZOS NODE HEALTH CHECK${NC}"
 echo -e "${BOLD}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
 echo ""
 
-# Collect last 10 minutes of logs for analysis
-log_info "Collecting logs from container ${BOLD}${CONTAINER}${NC}..."
+# Collect last 10 minutes of logs for error analysis
+log_info "Analyzing node logs (last 10 minutes)..."
 docker logs --since 10m "$CONTAINER" 2>&1 > "$TEMP_LOG" 2>/dev/null || {
     log_error "Failed to get docker logs from container"
     exit 1
 }
 
-# Count recent activity
-log_info "Analyzing log patterns (last 10 minutes)..."
 ERROR_COUNT=$(grep -ci "error" "$TEMP_LOG" 2>/dev/null | tail -1 || echo "0")
 WARN_COUNT=$(grep -ci "warn" "$TEMP_LOG" 2>/dev/null | tail -1 || echo "0")
-LOG_LINES=$(wc -l < "$TEMP_LOG" | tr -d ' ')
 
-# Get current peer count
+# Get current peer count from RPC
 log_info "Fetching network metrics..."
-PEERS=$(docker logs --tail 100 "$CONTAINER" 2>&1 | \
-    grep -o "conn\.: [0-9]*" | \
-    tail -1 | \
-    grep -o "[0-9]*" || echo "0")
+PEERS=$(curl -s "$RPC_ENDPOINT/network/connections" 2>/dev/null | jq 'length // 0' 2>/dev/null || echo "0")
 
 # Get timestamp
 TIMESTAMP=$(date '+%Y-%m-%d %H:%M:%S')
@@ -77,22 +72,21 @@ TIMESTAMP=$(date '+%Y-%m-%d %H:%M:%S')
 echo ""
 echo -e "${BOLD}METRICS SUMMARY${NC}"
 echo -e "────────────────────────────────────────────────────────────"
-printf "  %-25s %s\n" "Log Activity:" "${LOG_LINES} lines"
+printf "  %-25s %s\n" "Network Peers:" "${PEERS}/36"
 printf "  %-25s %s\n" "Errors (10min):" "${ERROR_COUNT}"
 printf "  %-25s %s\n" "Warnings (10min):" "${WARN_COUNT}"
-printf "  %-25s %s\n" "Network Peers:" "${PEERS}/36"
 echo ""
 
-# Determine alert level
+# Determine alert level based on actual node health
 ALERT_LEVEL="healthy"
 ALERT_MESSAGE="Node operating normally"
 SEVERITY="OK"
 COLOR="${GREEN}"
 
 # Check for critical conditions
-if [ "$LOG_LINES" -lt 5 ]; then
+if [ "$PEERS" -eq 0 ]; then
     ALERT_LEVEL="critical"
-    ALERT_MESSAGE="Node appears stuck - no log activity"
+    ALERT_MESSAGE="No network peers connected"
     SEVERITY="CRITICAL"
     COLOR="${RED}"
 elif [ "$ERROR_COUNT" -gt 50 ]; then
@@ -111,9 +105,9 @@ elif [ "$ERROR_COUNT" -gt 20 ]; then
     ALERT_MESSAGE="Elevated error rate ($ERROR_COUNT errors in 10min)"
     SEVERITY="WARNING"
     COLOR="${YELLOW}"
-elif [ "$PEERS" -lt 10 ]; then
+elif [ "$PEERS" -lt 20 ]; then
     ALERT_LEVEL="warning"
-    ALERT_MESSAGE="Low peer count ($PEERS peers)"
+    ALERT_MESSAGE="Low peer count ($PEERS peers, target 36)"
     SEVERITY="WARNING"
     COLOR="${YELLOW}"
 fi
@@ -135,8 +129,7 @@ cat > "$STATUS_FILE" <<EOF
   "alert_message": "$ALERT_MESSAGE",
   "peers": "$PEERS",
   "errors_last_10min": "$ERROR_COUNT",
-  "warnings_last_10min": "$WARN_COUNT",
-  "log_activity": "$LOG_LINES"
+  "warnings_last_10min": "$WARN_COUNT"
 }
 EOF
 
