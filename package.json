@@ -21,6 +21,8 @@
     "monitor": "./scripts/monitor.sh",
     "monitor:watch": "./scripts/monitor-watch.sh",
     "health:check": "./scripts/health-check.sh",
+    "health:install-cron": "./scripts/install-health-cron.sh",
+    "health:uninstall-cron": "./scripts/uninstall-health-cron.sh",
     "verify": "./scripts/verify-production.sh",
     "block:inspect": "./scripts/inspect-block.sh",
     "security:configure-acl": "./scripts/configure-rpc-acl.sh",
