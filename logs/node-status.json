@@ -1,8 +1,10 @@
 {
-  "timestamp": "2026-01-01 23:34:47",
-  "alert_level": "warning",
-  "alert_message": "Low peer count (5 peers, target 36)",
-  "peers": "5",
+  "timestamp": "2026-01-01 23:35:42",
+  "alert_level": "critical",
+  "alert_message": "Node stuck 8h behind blockchain (not syncing)",
+  "peers": "24",
+  "block_level": "17312258",
+  "sync_lag_seconds": "32356",
   "errors_last_10min": "0",
   "warnings_last_10min": "0"
 }
