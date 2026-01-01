@@ -79,7 +79,7 @@ echo "Status written to: $STATUS_FILE"
 
 # Commit and push to trigger GitHub Actions
 if [ -n "$(git status --porcelain "$STATUS_FILE")" ]; then
-    git add "$STATUS_FILE"
+    git add -f "$STATUS_FILE"
     git commit -m "Update node health status: $ALERT_LEVEL" -m "Status: $ALERT_MESSAGE" --no-verify
     git push origin main
     echo "Status pushed to GitHub - Actions will process alert"
