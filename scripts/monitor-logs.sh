@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # Live log monitoring with structured output (shows only new logs)
 # Format: [timestamp] [level] message
 

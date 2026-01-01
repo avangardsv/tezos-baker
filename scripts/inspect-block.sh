@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # Block Inspector - Show what consists of a Tezos block
 

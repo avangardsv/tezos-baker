@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # Stop baker with automatic log backup
 
 set -e

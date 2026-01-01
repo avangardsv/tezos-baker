@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # Node health check script - runs every hour via cron
 # Collects metrics and pushes status to GitHub for Actions monitoring
 

@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # Tezos node monitor - displays current status
 
 # Load shared library

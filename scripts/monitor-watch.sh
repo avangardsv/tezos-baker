@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # Auto-refresh monitor script (works on macOS without watch command)
 

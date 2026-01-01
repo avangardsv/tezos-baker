@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # RPC ACL Configuration Script
 # Helps configure secure RPC access for production

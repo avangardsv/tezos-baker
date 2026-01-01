@@ -85,6 +85,18 @@ cp .env.example .env
 # 1. Initialize node configuration
 npm run node:init
 
+# 1b. Allow RPC monitoring endpoints (fixes ACL filtering)
+# Add this to `data/config.json` then restart the node when you start it:
+# ```
+# "rpc": {
+#   "listen-addrs": [ "0.0.0.0:8732" ],
+#   "acl": [
+#     { "address": "0.0.0.0", "blacklist": [] }
+#   ]
+# }
+# ```
+# Or run the helper: `npm run security:configure-acl`
+
 # 2. Create version file
 npm run node:version
 

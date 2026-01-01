@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # Stop node with automatic log backup
 
 set -e
