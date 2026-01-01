@@ -66,6 +66,21 @@ WARN_COUNT=$(grep -ci "warn" "$TEMP_LOG" 2>/dev/null | tail -1 || echo "0")
 log_info "Fetching network metrics..."
 PEERS=$(curl -s "$RPC_ENDPOINT/network/connections" 2>/dev/null | jq 'length // 0' 2>/dev/null || echo "0")
 
+# Get node block height and timestamp
+log_info "Checking block sync status..."
+NODE_HEAD=$(curl -s "$RPC_ENDPOINT/chains/main/blocks/head/header" 2>/dev/null)
+NODE_LEVEL=$(echo "$NODE_HEAD" | jq -r '.level // 0' 2>/dev/null || echo "0")
+NODE_TIMESTAMP=$(echo "$NODE_HEAD" | jq -r '.timestamp // ""' 2>/dev/null || echo "")
+
+# Calculate how old the node's head is (in seconds)
+if [ -n "$NODE_TIMESTAMP" ] && [ "$NODE_TIMESTAMP" != "null" ]; then
+    NODE_TIME=$(date -j -f "%Y-%m-%dT%H:%M:%SZ" "$NODE_TIMESTAMP" "+%s" 2>/dev/null || echo "0")
+    CURRENT_TIME=$(date "+%s")
+    SYNC_LAG=$((CURRENT_TIME - NODE_TIME))
+else
+    SYNC_LAG=999999
+fi
+
 # Get timestamp
 TIMESTAMP=$(date '+%Y-%m-%d %H:%M:%S')
 
@@ -73,6 +88,8 @@ echo ""
 echo -e "${BOLD}METRICS SUMMARY${NC}"
 echo -e "────────────────────────────────────────────────────────────"
 printf "  %-25s %s\n" "Network Peers:" "${PEERS}/36"
+printf "  %-25s %s\n" "Block Height:" "${NODE_LEVEL}"
+printf "  %-25s %s\n" "Sync Lag:" "${SYNC_LAG}s behind"
 printf "  %-25s %s\n" "Errors (10min):" "${ERROR_COUNT}"
 printf "  %-25s %s\n" "Warnings (10min):" "${WARN_COUNT}"
 echo ""
@@ -83,8 +100,15 @@ ALERT_MESSAGE="Node operating normally"
 SEVERITY="OK"
 COLOR="${GREEN}"
 
-# Check for critical conditions
-if [ "$PEERS" -eq 0 ]; then
+# Check for critical conditions (sync issues are highest priority)
+if [ "$SYNC_LAG" -gt 3600 ]; then
+    # Node is more than 1 hour behind
+    HOURS_BEHIND=$((SYNC_LAG / 3600))
+    ALERT_LEVEL="critical"
+    ALERT_MESSAGE="Node stuck ${HOURS_BEHIND}h behind blockchain (not syncing)"
+    SEVERITY="CRITICAL"
+    COLOR="${RED}"
+elif [ "$PEERS" -eq 0 ]; then
     ALERT_LEVEL="critical"
     ALERT_MESSAGE="No network peers connected"
     SEVERITY="CRITICAL"
@@ -100,6 +124,13 @@ elif [ "$PEERS" -lt 5 ]; then
     SEVERITY="CRITICAL"
     COLOR="${RED}"
 # Check for warning conditions
+elif [ "$SYNC_LAG" -gt 600 ]; then
+    # Node is more than 10 minutes behind
+    MINUTES_BEHIND=$((SYNC_LAG / 60))
+    ALERT_LEVEL="warning"
+    ALERT_MESSAGE="Node sync lagging ${MINUTES_BEHIND}m behind"
+    SEVERITY="WARNING"
+    COLOR="${YELLOW}"
 elif [ "$ERROR_COUNT" -gt 20 ]; then
     ALERT_LEVEL="warning"
     ALERT_MESSAGE="Elevated error rate ($ERROR_COUNT errors in 10min)"
@@ -128,6 +159,8 @@ cat > "$STATUS_FILE" <<EOF
   "alert_level": "$ALERT_LEVEL",
   "alert_message": "$ALERT_MESSAGE",
   "peers": "$PEERS",
+  "block_level": "$NODE_LEVEL",
+  "sync_lag_seconds": "$SYNC_LAG",
   "errors_last_10min": "$ERROR_COUNT",
   "warnings_last_10min": "$WARN_COUNT"
 }
