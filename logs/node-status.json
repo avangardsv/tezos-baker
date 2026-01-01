@@ -1,10 +1,10 @@
 {
-  "timestamp": "2026-01-01 23:35:42",
+  "timestamp": "2026-01-01 23:37:14",
   "alert_level": "critical",
-  "alert_message": "Node stuck 8h behind blockchain (not syncing)",
-  "peers": "24",
+  "alert_message": "Node stuck 9h behind blockchain (not syncing)",
+  "peers": "22",
   "block_level": "17312258",
-  "sync_lag_seconds": "32356",
+  "sync_lag_seconds": "32448",
   "errors_last_10min": "0",
   "warnings_last_10min": "0"
 }
