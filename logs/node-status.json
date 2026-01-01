@@ -1,8 +1,8 @@
 {
-  "timestamp": "2026-01-01 22:58:26",
+  "timestamp": "2026-01-01 23:00:57",
   "alert_level": "critical",
   "alert_message": "Node appears stuck - no log activity",
-  "peers": "15",
+  "peers": "22",
   "errors_last_10min": "0",
   "warnings_last_10min": "0",
   "log_activity": "0"
