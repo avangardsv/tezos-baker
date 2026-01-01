@@ -1,46 +1,17 @@
 #!/bin/bash
-# Node health check script - runs every 10 minutes
+# Node health check script - runs every hour via cron
 # Collects metrics and pushes status to GitHub for Actions monitoring
 
 set -e
 
-# Colors for output
-RED='\033[0;31m'
-YELLOW='\033[1;33m'
-GREEN='\033[0;32m'
-BLUE='\033[0;34m'
-GRAY='\033[0;90m'
-BOLD='\033[1m'
-NC='\033[0m' # No Color
+# Load shared library
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+source "$SCRIPT_DIR/lib/common.sh"
 
-# Log helpers
-log_info() {
-    echo -e "${GRAY}$(date -u '+%Y-%m-%dT%H:%M:%S.%3NZ')${NC} ${BLUE}INFO${NC}  $1"
-}
-
-log_warn() {
-    echo -e "${GRAY}$(date -u '+%Y-%m-%dT%H:%M:%S.%3NZ')${NC} ${YELLOW}WARN${NC}  $1"
-}
-
-log_error() {
-    echo -e "${GRAY}$(date -u '+%Y-%m-%dT%H:%M:%S.%3NZ')${NC} ${RED}ERROR${NC} $1"
-}
-
-log_success() {
-    echo -e "${GRAY}$(date -u '+%Y-%m-%dT%H:%M:%S.%3NZ')${NC} ${GREEN}SUCCESS${NC} $1"
-}
-
-# Load environment
-if [ -f .env ]; then
-    set -a
-    source <(grep -v '^#' .env | sed -e '/^\s*$/d' -e "s/^\([^=]*\)=\(.*\)$/\1=\"\2\"/" -e 's/=""/=/g')
-    set +a
-fi
-
-CONTAINER="${CONTAINER_PREFIX:-tezos}-node"
-RPC_ENDPOINT="http://${RPC_ADDR:-127.0.0.1}:${RPC_PORT:-8732}"
+# Configuration
 STATUS_FILE="logs/node-status.json"
 TEMP_LOG="/tmp/tezos-health-check.log"
+CONTAINER=$(get_container_name)
 
 # Create logs directory
 mkdir -p logs
@@ -62,34 +33,23 @@ docker logs --since 10m "$CONTAINER" 2>&1 > "$TEMP_LOG" 2>/dev/null || {
 ERROR_COUNT=$(grep -ci "error" "$TEMP_LOG" 2>/dev/null | tail -1 || echo "0")
 WARN_COUNT=$(grep -ci "warn" "$TEMP_LOG" 2>/dev/null | tail -1 || echo "0")
 
-# Get current peer count from RPC
+# Get metrics using shared RPC functions
 log_info "Fetching network metrics..."
-PEERS=$(curl -s "$RPC_ENDPOINT/network/connections" 2>/dev/null | jq 'length // 0' 2>/dev/null || echo "0")
+PEERS=$(rpc_get_peer_count)
 
-# Get node block height and timestamp
 log_info "Checking block sync status..."
-NODE_HEAD=$(curl -s "$RPC_ENDPOINT/chains/main/blocks/head/header" 2>/dev/null)
-NODE_LEVEL=$(echo "$NODE_HEAD" | jq -r '.level // 0' 2>/dev/null || echo "0")
-NODE_TIMESTAMP=$(echo "$NODE_HEAD" | jq -r '.timestamp // ""' 2>/dev/null || echo "")
-
-# Calculate how old the node's head is (in seconds)
-if [ -n "$NODE_TIMESTAMP" ] && [ "$NODE_TIMESTAMP" != "null" ]; then
-    NODE_TIME=$(date -j -f "%Y-%m-%dT%H:%M:%SZ" "$NODE_TIMESTAMP" "+%s" 2>/dev/null || echo "0")
-    CURRENT_TIME=$(date "+%s")
-    SYNC_LAG=$((CURRENT_TIME - NODE_TIME))
-else
-    SYNC_LAG=999999
-fi
-
-# Get timestamp
+NODE_LEVEL=$(rpc_get_block_level)
+NODE_TIMESTAMP=$(rpc_get_block_timestamp)
+SYNC_LAG=$(get_sync_lag "$NODE_TIMESTAMP")
 TIMESTAMP=$(date '+%Y-%m-%d %H:%M:%S')
 
+# Display metrics
 echo ""
 echo -e "${BOLD}METRICS SUMMARY${NC}"
 echo -e "────────────────────────────────────────────────────────────"
 printf "  %-25s %s\n" "Network Peers:" "${PEERS}/36"
 printf "  %-25s %s\n" "Block Height:" "${NODE_LEVEL}"
-printf "  %-25s %s\n" "Sync Lag:" "${SYNC_LAG}s behind"
+printf "  %-25s %s\n" "Sync Lag:" "$(seconds_to_human $SYNC_LAG) behind"
 printf "  %-25s %s\n" "Errors (10min):" "${ERROR_COUNT}"
 printf "  %-25s %s\n" "Warnings (10min):" "${WARN_COUNT}"
 echo ""
@@ -102,10 +62,8 @@ COLOR="${GREEN}"
 
 # Check for critical conditions (sync issues are highest priority)
 if [ "$SYNC_LAG" -gt 3600 ]; then
-    # Node is more than 1 hour behind
-    HOURS_BEHIND=$((SYNC_LAG / 3600))
     ALERT_LEVEL="critical"
-    ALERT_MESSAGE="Node stuck ${HOURS_BEHIND}h behind blockchain (not syncing)"
+    ALERT_MESSAGE="Node stuck $(seconds_to_human $SYNC_LAG) behind blockchain (not syncing)"
     SEVERITY="CRITICAL"
     COLOR="${RED}"
 elif [ "$PEERS" -eq 0 ]; then
@@ -125,10 +83,8 @@ elif [ "$PEERS" -lt 5 ]; then
     COLOR="${RED}"
 # Check for warning conditions
 elif [ "$SYNC_LAG" -gt 600 ]; then
-    # Node is more than 10 minutes behind
-    MINUTES_BEHIND=$((SYNC_LAG / 60))
     ALERT_LEVEL="warning"
-    ALERT_MESSAGE="Node sync lagging ${MINUTES_BEHIND}m behind"
+    ALERT_MESSAGE="Node sync lagging $(seconds_to_human $SYNC_LAG) behind"
     SEVERITY="WARNING"
     COLOR="${YELLOW}"
 elif [ "$ERROR_COUNT" -gt 20 ]; then

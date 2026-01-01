@@ -1,21 +1,9 @@
 #!/bin/bash
+# Tezos node monitor - displays current status
 
-# Load environment variables safely
-if [ -f .env ]; then
-    set -a
-    source <(grep -v '^#' .env | sed -e '/^\s*$/d' -e 's/^\([^=]*\)=\(.*\)$/\1="\2"/' -e 's/=""/=/g')
-    set +a
-fi
-
-RPC_ENDPOINT="http://${RPC_ADDR:-127.0.0.1}:${RPC_PORT:-8732}"
-
-# Colors
-GREEN='\033[0;32m'
-BLUE='\033[0;34m'
-YELLOW='\033[1;33m'
-RED='\033[0;31m'
-CYAN='\033[0;36m'
-NC='\033[0m' # No Color
+# Load shared library
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+source "$SCRIPT_DIR/lib/common.sh"
 
 clear
 
@@ -25,7 +13,7 @@ echo -e "${BLUE}╚════════════════════�
 echo ""
 
 # Check if node is running
-if ! docker ps | grep -q "${CONTAINER_PREFIX:-tezos}-node"; then
+if ! is_node_running; then
     echo -e "${RED}❌ Node is not running${NC}"
     echo "Run: npm run node:start"
     exit 1
@@ -36,7 +24,7 @@ echo ""
 
 # Get current head
 echo -e "${YELLOW}📊 BLOCKCHAIN STATUS:${NC}"
-HEAD=$(curl -s $RPC_ENDPOINT/chains/main/blocks/head/header 2>/dev/null)
+HEAD=$(rpc_get_block_head)
 
 if [ $? -eq 0 ] && [ -n "$HEAD" ]; then
     LEVEL=$(echo $HEAD | jq -r '.level // "N/A"')
@@ -56,14 +44,14 @@ echo ""
 
 # Get network connections
 echo -e "${YELLOW}🌐 NETWORK STATUS:${NC}"
-CONNECTIONS=$(curl -s $RPC_ENDPOINT/network/connections 2>/dev/null)
+CONNECTIONS=$(rpc_get_connections)
 
 if [ $? -eq 0 ] && [ -n "$CONNECTIONS" ]; then
     CONN_COUNT=$(echo "$CONNECTIONS" | jq 'length // 0' 2>/dev/null)
-    
+
     if [ -n "$CONN_COUNT" ] && [ "$CONN_COUNT" != "null" ]; then
         echo -e "  Active Peers: ${GREEN}$CONN_COUNT${NC}"
-        
+
         if [ "$CONN_COUNT" -gt 0 ]; then
             # Show top 5 peers
             echo -e "\n  ${BLUE}Connected Peers:${NC}"
@@ -80,9 +68,9 @@ fi
 
 echo ""
 
-# Get sync status from logs (docker logs outputs to stderr, so capture it properly)
+# Get sync status from logs
 echo -e "${YELLOW}🔄 SYNC STATUS:${NC}"
-LAST_LOGS=$(docker logs --tail 10 ${CONTAINER_PREFIX:-tezos}-node 2>&1)
+LAST_LOGS=$(docker logs --tail 10 $(get_container_name) 2>&1)
 if echo "$LAST_LOGS" | grep -q "synchronisation status: synced"; then
     echo -e "  ${GREEN}✅ SYNCED${NC}"
 elif echo "$LAST_LOGS" | grep -q "synchronizing"; then
@@ -100,10 +88,10 @@ echo ""
 
 # Get chain info
 echo -e "${YELLOW}⛓️  CHAIN INFO:${NC}"
-CHAIN_ID=$(curl -s $RPC_ENDPOINT/chains/main/chain_id 2>/dev/null | tr -d '"')
+CHAIN_ID=$(rpc_get_chain_id)
 if [ -n "$CHAIN_ID" ] && [ "$CHAIN_ID" != "null" ]; then
     echo -e "  Chain ID: ${BLUE}$CHAIN_ID${NC}"
-    
+
     # Network name mapping
     if [ "$CHAIN_ID" == "NetXnHfVqm9iesp" ]; then
         echo -e "  Network:  ${CYAN}Ghostnet Testnet${NC}"
@@ -120,5 +108,3 @@ echo -e "  ${GREEN}npm run node:head${NC}     - Current block details"
 echo -e "  ${GREEN}npm run node:peers${NC}    - List all peers"
 echo -e "  ${GREEN}npm run monitor:watch${NC} - Auto-refresh this view"
 echo -e "${BLUE}────────────────────────────────────────────────────────${NC}"
-
-
