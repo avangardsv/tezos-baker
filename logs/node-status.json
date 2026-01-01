@@ -1,8 +1,8 @@
 {
-  "timestamp": "2026-01-01 23:31:59",
-  "alert_level": "healthy",
-  "alert_message": "Node operating normally",
-  "peers": "29",
+  "timestamp": "2026-01-01 23:34:47",
+  "alert_level": "warning",
+  "alert_message": "Low peer count (5 peers, target 36)",
+  "peers": "5",
   "errors_last_10min": "0",
   "warnings_last_10min": "0"
 }
