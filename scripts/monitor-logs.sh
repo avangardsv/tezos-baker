@@ -1,5 +1,5 @@
 #!/bin/bash
-# Live log monitoring with structured output
+# Live log monitoring with structured output (shows only new logs)
 # Format: [timestamp] [level] message
 
 # Load environment
@@ -11,14 +11,15 @@ fi
 
 CONTAINER="${CONTAINER_PREFIX:-tezos}-node"
 
-echo "Tezos Node Log Monitor"
+echo "Tezos Node Log Monitor (Live)"
 echo "Format: [timestamp] [level] message"
 echo "Levels: INFO, WARN, ERROR"
+echo "Showing only NEW logs (history skipped)"
 echo "Press Ctrl+C to stop"
 echo "----------------------------------------"
 
-# Follow logs with structured filtering
-docker logs -f "$CONTAINER" 2>&1 | grep --line-buffered -E "(synchronizing|received new head|too few connections|disconnected|error|warning|ERROR|WARN)" | while read line; do
+# Follow logs with structured filtering (live only, skip history)
+docker logs -f --tail 0 "$CONTAINER" 2>&1 | grep --line-buffered -E "(synchronizing|received new head|too few connections|disconnected|error|warning|ERROR|WARN)" | while read line; do
     timestamp=$(date '+%Y-%m-%d %H:%M:%S')
     
     if echo "$line" | grep -q "synchronizing"; then
