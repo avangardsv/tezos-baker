@@ -25,9 +25,9 @@ docker logs --since 10m "$CONTAINER" 2>&1 > "$TEMP_LOG" || {
 }
 
 # Count recent activity
-ERROR_COUNT=$(grep -ci "error" "$TEMP_LOG" 2>/dev/null || echo "0")
-WARN_COUNT=$(grep -ci "warn" "$TEMP_LOG" 2>/dev/null || echo "0")
-LOG_LINES=$(wc -l < "$TEMP_LOG")
+ERROR_COUNT=$(grep -ci "error" "$TEMP_LOG" 2>/dev/null | tail -1 || echo "0")
+WARN_COUNT=$(grep -ci "warn" "$TEMP_LOG" 2>/dev/null | tail -1 || echo "0")
+LOG_LINES=$(wc -l < "$TEMP_LOG" | tr -d ' ')
 
 # Get current peer count
 PEERS=$(docker logs --tail 100 "$CONTAINER" 2>&1 | \
