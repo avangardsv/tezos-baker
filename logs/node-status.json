@@ -1,8 +1,8 @@
 {
-  "timestamp": "2026-01-01 23:29:37",
+  "timestamp": "2026-01-01 23:31:57",
   "alert_level": "healthy",
   "alert_message": "Node operating normally",
-  "peers": "30",
+  "peers": "29",
   "errors_last_10min": "0",
   "warnings_last_10min": "0"
 }
