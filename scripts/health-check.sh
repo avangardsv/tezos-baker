@@ -75,7 +75,7 @@ PEERS=$(docker logs --tail 100 "$CONTAINER" 2>&1 | \
 TIMESTAMP=$(date '+%Y-%m-%d %H:%M:%S')
 
 echo ""
-echo -e "${BOLD}📊 METRICS SUMMARY${NC}"
+echo -e "${BOLD}METRICS SUMMARY${NC}"
 echo -e "────────────────────────────────────────────────────────────"
 printf "  %-25s %s\n" "Log Activity:" "${LOG_LINES} lines"
 printf "  %-25s %s\n" "Errors (10min):" "${ERROR_COUNT}"
@@ -86,43 +86,43 @@ echo ""
 # Determine alert level
 ALERT_LEVEL="healthy"
 ALERT_MESSAGE="Node operating normally"
-ICON="✅"
+SEVERITY="OK"
 COLOR="${GREEN}"
 
 # Check for critical conditions
 if [ "$LOG_LINES" -lt 5 ]; then
     ALERT_LEVEL="critical"
     ALERT_MESSAGE="Node appears stuck - no log activity"
-    ICON="🔴"
+    SEVERITY="CRITICAL"
     COLOR="${RED}"
 elif [ "$ERROR_COUNT" -gt 50 ]; then
     ALERT_LEVEL="critical"
     ALERT_MESSAGE="High error rate detected ($ERROR_COUNT errors in 10min)"
-    ICON="🔴"
+    SEVERITY="CRITICAL"
     COLOR="${RED}"
 elif [ "$PEERS" -lt 5 ]; then
     ALERT_LEVEL="critical"
     ALERT_MESSAGE="Very low peer count ($PEERS peers)"
-    ICON="🔴"
+    SEVERITY="CRITICAL"
     COLOR="${RED}"
 # Check for warning conditions
 elif [ "$ERROR_COUNT" -gt 20 ]; then
     ALERT_LEVEL="warning"
     ALERT_MESSAGE="Elevated error rate ($ERROR_COUNT errors in 10min)"
-    ICON="⚠️"
+    SEVERITY="WARNING"
     COLOR="${YELLOW}"
 elif [ "$PEERS" -lt 10 ]; then
     ALERT_LEVEL="warning"
     ALERT_MESSAGE="Low peer count ($PEERS peers)"
-    ICON="⚠️"
+    SEVERITY="WARNING"
     COLOR="${YELLOW}"
 fi
 
 # Print status
-echo -e "${BOLD}🏥 HEALTH STATUS${NC}"
+echo -e "${BOLD}HEALTH STATUS${NC}"
 echo -e "────────────────────────────────────────────────────────────"
-echo -e "  Status: ${ICON} ${COLOR}$(echo ${ALERT_LEVEL} | tr '[:lower:]' '[:upper:]')${NC}"
-echo -e "  Message: ${ALERT_MESSAGE}"
+echo -e "  Level:     ${COLOR}[${SEVERITY}]${NC}"
+echo -e "  Message:   ${ALERT_MESSAGE}"
 echo -e "  Timestamp: ${TIMESTAMP}"
 echo ""
 
@@ -162,11 +162,11 @@ rm -f "$TEMP_LOG"
 echo ""
 echo -e "${BOLD}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
 if [ "$ALERT_LEVEL" = "critical" ]; then
-    echo -e "${RED}${BOLD}  ⚡ CRITICAL: Check notifications for details${NC}"
+    echo -e "${RED}${BOLD}  [CRITICAL] Check notifications for details${NC}"
 elif [ "$ALERT_LEVEL" = "warning" ]; then
-    echo -e "${YELLOW}${BOLD}  ⚠️  WARNING: Monitor node status closely${NC}"
+    echo -e "${YELLOW}${BOLD}  [WARNING] Monitor node status closely${NC}"
 else
-    echo -e "${GREEN}${BOLD}  ✅ All systems operational${NC}"
+    echo -e "${GREEN}${BOLD}  [OK] All systems operational${NC}"
 fi
 echo -e "${BOLD}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
 echo ""
