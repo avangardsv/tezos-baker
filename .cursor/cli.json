@@ -1,0 +1,48 @@
+{
+  "version": 1,
+  "editor": {
+    "vimMode": false
+  },
+  "permissions": {
+    "allow": [
+      "Shell(git add)",
+      "Shell(git restore --staged)",
+      "Shell(git rm)",
+      "Shell(git mv)",
+      "Shell(git commit)",
+      "Shell(git commit --amend)",
+      "Shell(git revert)",
+      "Shell(git branch)",
+      "Shell(git checkout -b)",
+      "Shell(git switch -c)",
+      "Shell(git branch -d)",
+      "Shell(git branch -D)",
+      "Shell(git merge)",
+      "Shell(git rebase)",
+      "Shell(git cherry-pick)",
+      "Shell(git tag)",
+      "Shell(git tag -d)",
+      "Shell(git push)",
+      "Shell(git push --tags)",
+      "Shell(git fetch)",
+      "Shell(git pull)",
+      "Shell(git reset)",
+      "Shell(git reset --hard)",
+      "Shell(git stash)",
+      "Shell(git stash pop)",
+      "Shell(git stash drop)"
+    ],
+    "deny": [
+      "Shell(git status)",
+      "Shell(git log)",
+      "Shell(git show)",
+      "Shell(git diff)",
+      "Shell(git ls-files)",
+      "Shell(git describe)",
+      "Shell(git rev-parse)",
+      "Shell(git remote -v)",
+      "Shell(git config --get)"
+    ]
+  }
+}
+
