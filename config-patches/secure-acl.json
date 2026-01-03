@@ -1,0 +1,25 @@
+{
+  "rpc": {
+    "listen-addrs": ["0.0.0.0:8732"],
+    "acl": [
+      {
+        "address": "127.0.0.1",
+        "blacklist": []
+      },
+      {
+        "address": "::1",
+        "blacklist": []
+      },
+      {
+        "address": "0.0.0.0",
+        "whitelist": [
+          "GET /chains/**",
+          "GET /monitor/**",
+          "GET /network/**",
+          "GET /version",
+          "GET /config/**"
+        ]
+      }
+    ]
+  }
+}

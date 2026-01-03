@@ -1,0 +1,12 @@
+# Prometheus configuration for Tezos node monitoring
+# Based on: https://octez.tezos.com/user/node-monitoring.html
+
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+scrape_configs:
+  - job_name: 'tezos-node'
+    static_configs:
+      - targets: ['host.docker.internal:9095']
+    scrape_interval: 15s

@@ -1,0 +1,6 @@
+{
+  "log": {
+    "output": "/var/run/tezos/node/logs/octez-node.log",
+    "level": "info"
+  }
+}
