@@ -10,3 +10,10 @@ scrape_configs:
     static_configs:
       - targets: ['host.docker.internal:9095']
     scrape_interval: 15s
+
+  # node_exporter - Hardware metrics
+  - job_name: 'node-exporter'
+    static_configs:
+      - targets: ['node_exporter:9100']
+        labels:
+          instance: 'host.docker.internal:9100'
