@@ -5,9 +5,6 @@ backups/
 # Environment
 .env
 
-# Documentation (not ready for git yet)
-docs/
-
 # Node modules
 node_modules/
 
