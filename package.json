@@ -11,6 +11,7 @@
     "snapshot:download": "npm run env && . ./.env && mkdir -p ${BACKUP_DIR:-backups} && cd ${BACKUP_DIR:-backups} && wget -O ${TEZOS_NETWORK:-ghostnet}-rolling.snapshot https://snapshots.tzinit.org/${TEZOS_NETWORK:-ghostnet}/rolling",
     "snapshot:import": "npm run env && . ./.env && docker run --rm --entrypoint octez-node -v \"$PWD/${DATA_DIR:-data}:/var/run/tezos/node\" -v \"$PWD/${BACKUP_DIR:-backups}:/backups:ro\" tezos/tezos:${OCTEZ_VERSION:-octez-v23.1} snapshot import /backups/${TEZOS_NETWORK:-ghostnet}-rolling.snapshot --data-dir /var/run/tezos/node",
     "node:start": "npm run env && . ./.env && docker run -d --name ${CONTAINER_PREFIX:-tezos}-node --entrypoint octez-node -v \"$PWD/${DATA_DIR:-data}:/var/run/tezos/node\" -p ${RPC_PORT:-8732}:${RPC_PORT:-8732} -p ${P2P_PORT:-9732}:${P2P_PORT:-9732} -p ${METRICS_PORT:-9095}:${METRICS_PORT:-9095} tezos/tezos:${OCTEZ_VERSION:-octez-v23.1} run --network ${TEZOS_NETWORK:-ghostnet} --data-dir /var/run/tezos/node --metrics-addr 0.0.0.0:${METRICS_PORT:-9095}",
+    "node:restart": ". ./.env 2>/dev/null || true && docker start ${CONTAINER_PREFIX:-tezos}-node",
     "node:stop": "./scripts/node-stop.sh",
     "node:logs": ". ./.env 2>/dev/null || true && docker logs -f ${CONTAINER_PREFIX:-tezos}-node",
     "account:create": "npm run env && . ./.env && docker exec ${CONTAINER_PREFIX:-tezos}-node octez-client -d /var/run/tezos/node/.tezos-client --endpoint http://${RPC_ADDR:-127.0.0.1}:${RPC_PORT:-8732} gen keys ${BAKER_ALIAS:-alice}",
@@ -20,7 +21,11 @@
     "stake:all": "./scripts/stake-funds.sh all",
     "delegate:register": "npm run env && . ./.env && docker exec ${CONTAINER_PREFIX:-tezos}-node octez-client -d /var/run/tezos/node/.tezos-client --endpoint http://${RPC_ADDR:-127.0.0.1}:${RPC_PORT:-8732} register key ${BAKER_ALIAS:-alice} as delegate",
     "baker:start": "npm run env && . ./.env && docker run -d --name ${CONTAINER_PREFIX:-tezos}-baker --network container:${CONTAINER_PREFIX:-tezos}-node -v \"$PWD/${DATA_DIR:-data}:/var/run/tezos/node\" -v \"$PWD/${DATA_DIR:-data}/.tezos-client:/home/tezos/.tezos-client\" --entrypoint octez-baker-${PROTOCOL:-PtSeouLo} tezos/tezos:${OCTEZ_VERSION:-octez-v23.1} run with local node /var/run/tezos/node --without-dal --liquidity-baking-toggle-vote pass ${BAKER_ALIAS:-alice}",
+    "baker:restart": ". ./.env 2>/dev/null || true && docker start ${CONTAINER_PREFIX:-tezos}-baker",
     "baker:logs": ". ./.env 2>/dev/null || true && docker logs -f ${CONTAINER_PREFIX:-tezos}-baker",
+    "monitoring:start": ". ./.env 2>/dev/null || true && docker start ${CONTAINER_PREFIX:-tezos}-prometheus ${CONTAINER_PREFIX:-tezos}-grafana ${CONTAINER_PREFIX:-tezos}-loki ${CONTAINER_PREFIX:-tezos}-promtail ${CONTAINER_PREFIX:-tezos}-node-exporter",
+    "monitoring:stop": ". ./.env 2>/dev/null || true && docker stop ${CONTAINER_PREFIX:-tezos}-prometheus ${CONTAINER_PREFIX:-tezos}-grafana ${CONTAINER_PREFIX:-tezos}-loki ${CONTAINER_PREFIX:-tezos}-promtail ${CONTAINER_PREFIX:-tezos}-node-exporter",
+    "restart:all": "npm run node:restart && npm run baker:restart && npm run monitoring:start && echo '\n✅ All services started! Check status: npm run stake:status'",
     "help": "./scripts/help.sh"
   },
   "keywords": [
