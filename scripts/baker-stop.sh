@@ -1,38 +1,43 @@
 #!/usr/bin/env bash
 # Stop baker with automatic log backup
 
-set -e
+set -euo pipefail
 
-# Load environment
-if [ -f .env ]; then
-    set -a
-    source <(grep -v '^#' .env | sed -e '/^\s*$/d' -e "s/^\([^=]*\)=\(.*\)$/\1=\"\2\"/" -e 's/=""/=/g')
-    set +a
-fi
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/lib/env.sh"
+source "$SCRIPT_DIR/lib/common.sh"
 
-CONTAINER="${CONTAINER_PREFIX:-tezos}-baker"
-LOG_DIR="logs"
-TIMESTAMP=$(date +%Y%m%d-%H%M%S)
-LOG_FILE="$LOG_DIR/baker-$TIMESTAMP.log"
+# =============================================================================
+# MAIN
+# =============================================================================
 
-# Create logs directory if it doesn't exist
-mkdir -p "$LOG_DIR"
-
-# Check if container exists
-if docker ps -a --format '{{.Names}}' | grep -q "^${CONTAINER}$"; then
-    echo "📝 Saving baker logs to: $LOG_FILE"
+main() {
+    local container_name="${CONTAINER_PREFIX}-baker"
+    local log_dir="$PROJECT_ROOT/logs"
+    local timestamp=$(date +%Y%m%d-%H%M%S)
+    local log_file="$log_dir/baker-$timestamp.log"
     
-    # Save logs (both stdout and stderr)
-    docker logs "$CONTAINER" > "$LOG_FILE" 2>&1
+    # Create logs directory if it doesn't exist
+    mkdir -p "$log_dir"
     
-    # Get log file size for feedback
-    LOG_SIZE=$(du -h "$LOG_FILE" | awk '{print $1}')
-    echo "✅ Saved $LOG_SIZE of logs"
-    
-    # Stop and remove container
-    echo "🛑 Stopping baker container..."
-    docker rm -f "$CONTAINER" > /dev/null
-    echo "✅ Baker stopped"
-else
-    echo "ℹ️  Baker container not running (nothing to stop)"
-fi
+    # Check if container exists
+    if docker ps -a --format '{{.Names}}' | grep -q "^${container_name}$"; then
+        log_info "Saving baker logs to: $log_file"
+        
+        # Save logs (both stdout and stderr)
+        docker logs "$container_name" > "$log_file" 2>&1
+        
+        # Get log file size for feedback
+        local log_size=$(du -h "$log_file" | awk '{print $1}')
+        log_success "Saved $log_size of logs"
+        
+        # Stop and remove container
+        log_info "Stopping baker container..."
+        docker rm -f "$container_name" > /dev/null
+        log_success "Baker stopped"
+    else
+        log_info "Baker container not running (nothing to stop)"
+    fi
+}
+
+main "$@"
