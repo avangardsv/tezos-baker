@@ -55,6 +55,56 @@ npm run baker:start
 
 **Timeline:** Wait 14-21 days after staking to receive baking rights.
 
+## DAL Setup (Optional - Advanced)
+
+**DAL (Data Availability Layer)** enables earning additional attestation rewards. This is optional for study mode.
+
+### When to Enable DAL
+
+- Your baker is already attesting successfully
+- You see "Missed DAL attestation rewards" on [ghostnet.tzkt.io](https://ghostnet.tzkt.io/)
+- You want to maximize testnet rewards
+
+### Quick DAL Setup
+
+```bash
+# One-command setup (initializes, starts, and configures baker)
+npm run dal:setup
+```
+
+**What this does:**
+1. Initializes DAL node configuration
+2. Starts DAL node container
+3. Reconfigures baker to use DAL
+
+### DAL Management Commands
+
+```bash
+# Verify DAL is working
+npm run dal:verify
+
+# Check DAL status
+npm run dal:status
+
+# View DAL logs
+npm run dal:logs
+
+# Restart DAL node
+npm run dal:restart
+```
+
+### Verify DAL Attestations
+
+After setup, check baker logs for DAL attestations:
+
+```bash
+npm run baker:logs | grep "with DAL"
+```
+
+**Normal output:** `injected attestation (with DAL)`
+
+**Note:** You'll only see DAL attestations when you're assigned DAL shards (random, like baking rights). Seeing "without DAL" is normal when you don't have shard assignments.
+
 ## ⚠️ Critical: Staking Required
 
 **You MUST stake funds to receive baking rights!**
@@ -84,9 +134,12 @@ npm run baker:start
 | **Baker** | `npm run delegate:register` | Register delegate |
 | | `npm run baker:start` | Start baker |
 | | `npm run baker:logs` | View logs |
+| **DAL** | `npm run dal:setup` | Setup DAL (optional) |
+| | `npm run dal:verify` | Verify DAL working |
+| | `npm run dal:status` | Check DAL health |
 | **Help** | `npm run help` | Show all commands |
 
-**Full workflow:** setup → snapshot → node → account → stake → delegate → baker
+**Full workflow:** setup → snapshot → node → account → stake → delegate → baker → (optional: DAL)
 
 ## Quick Health Check
 
@@ -241,6 +294,41 @@ npm run node:stop
 npm run node:start
 ```
 
+### DAL Not Working
+
+**Symptoms:** Baker shows "without DAL" or no DAL attestations
+
+**This is NORMAL if:**
+- You don't have DAL shard assignments (random, like baking rights)
+- Baker logs show: "has no assigned DAL shards at level"
+
+**This is a PROBLEM if:**
+- DAL container not running
+- Baker can't connect to DAL node
+
+**Solutions:**
+```bash
+# Check DAL status
+npm run dal:verify
+
+# Check DAL container
+docker ps | grep dal
+
+# Restart DAL
+npm run dal:restart
+
+# Reconfigure baker
+npm run baker:enable-dal
+
+# Check DAL logs for errors
+npm run dal:logs
+```
+
+**Common DAL issues:**
+1. **Container name conflict** - Run `npm run dal:stop` then `npm run dal:start`
+2. **Baker not reconfigured** - Run `npm run baker:enable-dal` to update baker
+3. **DAL node crashed** - Check logs with `npm run dal:logs` for errors
+
 ### Starting Fresh (Complete Reset)
 
 **If everything is broken, start over:**
@@ -265,6 +353,7 @@ npm run setup
 
 All settings are in `.env`:
 
+**Core settings:**
 - `TEZOS_NETWORK=ghostnet`
 - `OCTEZ_VERSION=octez-v23.1`
 - `PROTOCOL=PtSeouLo`
@@ -272,6 +361,11 @@ All settings are in `.env`:
 - `BAKER_ALIAS=alice`
 - `RPC_PORT=8732`
 - `P2P_PORT=9732`
+
+**DAL settings (optional):**
+- `DAL_DATA_DIR=./dal-data`
+- `DAL_RPC_PORT=10732`
+- `DAL_P2P_PORT=11732`
 
 ## Resources
 
@@ -317,7 +411,7 @@ After your baker is running:
 
 ---
 
-**Study Mode Version:** 1.0.0  
-**Last Updated:** 2026-01-06  
-**Optimized for:** Ghostnet testnet learning  
+**Study Mode Version:** 1.0.0
+**Last Updated:** 2026-01-10
+**Optimized for:** Ghostnet testnet learning
 **Production docs:** See `docs/archive/`
