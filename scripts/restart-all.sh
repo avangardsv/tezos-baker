@@ -23,7 +23,16 @@ main() {
     # Wait for node to be ready
     log_info "Waiting for node to be ready..."
     sleep 5
-    
+
+    # Restart DAL node (if exists)
+    local dal_container="${CONTAINER_PREFIX}-dal-node"
+    if docker ps -a --format '{{.Names}}' | grep -q "^${dal_container}$"; then
+        log_info "Restarting DAL node..."
+        docker restart "$dal_container" || docker start "$dal_container"
+        log_success "DAL node restarted"
+        sleep 2
+    fi
+
     # Restart baker
     local baker_container="${CONTAINER_PREFIX}-baker"
     if docker ps -a --format '{{.Names}}' | grep -q "^${baker_container}$"; then
