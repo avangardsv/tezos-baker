@@ -1,0 +1,60 @@
+[ { "peer_id": "idqmWsqEomrT65NoiS8b5o7fmdEh7L",
+    "created": "2026-01-10T07:18:03.715-00:00", "peer_metadata": {},
+    "events":
+      [ { "kind": "incoming_request",
+          "timestamp": "2026-01-10T07:18:03.715-00:00",
+          "addr": "::ffff:163.172.34.150", "port": 11732 },
+        { "kind": "connection_established",
+          "timestamp": "2026-01-10T07:18:03.756-00:00",
+          "addr": "::ffff:163.172.34.150", "port": 11732 } ],
+    "last_established_connection":
+      [ { "addr": "::ffff:163.172.34.150", "port": 11732 },
+        "2026-01-10T07:18:03.756-00:00" ] },
+  { "peer_id": "ids42GufW5rTdbPjtmB5SeD1n1YcZh",
+    "created": "2026-01-10T07:18:05.929-00:00", "peer_metadata": {},
+    "events":
+      [ { "kind": "incoming_request",
+          "timestamp": "2026-01-10T07:18:05.929-00:00",
+          "addr": "::ffff:87.89.124.89", "port": 41732 },
+        { "kind": "connection_established",
+          "timestamp": "2026-01-10T07:18:05.976-00:00",
+          "addr": "::ffff:87.89.124.89", "port": 41732 } ],
+    "last_established_connection":
+      [ { "addr": "::ffff:87.89.124.89", "port": 41732 },
+        "2026-01-10T07:18:05.976-00:00" ] },
+  { "peer_id": "idrjLBk747wXJZM1JirrnfV58mXvdV",
+    "created": "2026-01-10T07:18:06.281-00:00", "peer_metadata": {},
+    "events":
+      [ { "kind": "incoming_request",
+          "timestamp": "2026-01-10T07:18:06.281-00:00",
+          "addr": "::ffff:163.172.51.251", "port": 30056 },
+        { "kind": "request_rejected",
+          "timestamp": "2026-01-10T07:18:06.308-00:00",
+          "addr": "::ffff:163.172.51.251", "port": 30056 } ],
+    "last_rejected_connection":
+      [ { "addr": "::ffff:163.172.51.251", "port": 30056 },
+        "2026-01-10T07:18:06.308-00:00" ] },
+  { "peer_id": "idrpUzezw7VJ4NU6phQYuxh88RiU1t",
+    "created": "2026-01-10T07:17:48.739-00:00", "peer_metadata": {},
+    "events":
+      [ { "kind": "incoming_request",
+          "timestamp": "2026-01-10T07:17:48.739-00:00",
+          "addr": "::ffff:46.137.127.32", "port": 11732 },
+        { "kind": "connection_established",
+          "timestamp": "2026-01-10T07:17:48.791-00:00",
+          "addr": "::ffff:46.137.127.32", "port": 11732 } ],
+    "last_established_connection":
+      [ { "addr": "::ffff:46.137.127.32", "port": 11732 },
+        "2026-01-10T07:17:48.791-00:00" ] },
+  { "peer_id": "idqrcQybXbKwWk42bn1XjeZ33xgduC",
+    "created": "2026-01-10T07:17:48.939-00:00", "peer_metadata": {},
+    "events":
+      [ { "kind": "incoming_request",
+          "timestamp": "2026-01-10T07:17:48.939-00:00",
+          "addr": "::ffff:52.31.26.230", "port": 11732 },
+        { "kind": "connection_established",
+          "timestamp": "2026-01-10T07:17:48.988-00:00",
+          "addr": "::ffff:52.31.26.230", "port": 11732 } ],
+    "last_established_connection":
+      [ { "addr": "::ffff:52.31.26.230", "port": 11732 },
+        "2026-01-10T07:17:48.988-00:00" ] } ]
