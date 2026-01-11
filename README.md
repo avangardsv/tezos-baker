@@ -2,6 +2,30 @@
 
 Quick start guide for learning Tezos baking on Ghostnet testnet.
 
+## ⚠️ Educational Project - Not for Production
+
+**This is a learning project for Ghostnet testnet only.**
+
+- ✅ **Use for:** Understanding Tezos baking fundamentals, experimenting on testnet
+- ❌ **DO NOT use for:** Mainnet production, securing real funds
+- 🏭 **For production:** Use [TezBake](https://docs.tez.capital/tezbake/) with hardware wallet security
+
+**Key limitations:**
+- Uses software keys (not hardware wallet)
+- No high watermark (HWM) protection
+- No consensus key separation
+- No failover mechanism
+- Designed for Mac laptop (not 24/7 server)
+
+**What you'll learn:**
+- Docker container orchestration for Tezos
+- Node synchronization and snapshot management
+- Staking and delegation mechanics
+- Baker daemon operation
+- DAL (Data Availability Layer) setup
+- Monitoring with Prometheus/Grafana
+- Troubleshooting and recovery procedures
+
 ## Prerequisites
 
 - **Docker** installed and running

@@ -1,2 +1,0 @@
-{ "data-dir": "/var/run/tezos/dal", "public-addr": "127.0.0.1:11732",
-  "endpoint": "http://127.0.0.1:8732", "version": 2 }
