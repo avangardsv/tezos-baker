@@ -142,28 +142,56 @@ npm run baker:logs | grep "with DAL"
 
 ## Essential Commands
 
+### Quick Reference
+
 | Category | Command | Purpose |
 |----------|---------|---------|
-| **Setup** | `npm run setup` | Initialize node |
-| | `npm run snapshot:download` | Download snapshot |
-| | `npm run snapshot:import` | Import snapshot |
+| **Setup** | `npm run setup` | Initialize node (init+identity+version) |
+| | `npm run snapshot:download` | Download blockchain snapshot |
+| | `npm run snapshot:import` | Import snapshot to node |
 | **Node** | `npm run node:start` | Start node |
 | | `npm run node:stop` | Stop node |
-| | `npm run node:logs` | View logs |
-| **Account** | `npm run account:create` | Generate keys |
+| | `npm run node:restart` | Restart node |
+| | `npm run node:hard-restart` | Stop and start node |
+| | `npm run node:status` | Check node health |
+| | `npm run node:logs` | View live logs |
+| | `npm run node:logs:tail` | View last 50 lines |
+| | `npm run node:health` | Health metrics |
+| | `npm run node:sync-status` | Sync progress |
+| **Account** | `npm run account:create` | Generate baker keys |
 | | `npm run account:show` | Show address |
 | | `npm run account:balance` | Check balance |
-| **Staking** | `npm run stake:status` | Check status |
-| | `npm run stake:all` | Stake funds |
-| **Baker** | `npm run delegate:register` | Register delegate |
-| | `npm run baker:start` | Start baker |
-| | `npm run baker:logs` | View logs |
-| **DAL** | `npm run dal:setup` | Setup DAL (optional) |
+| **Staking** | `npm run stake:status` | Check staking status |
+| | `npm run stake:all` | Stake all available funds |
+| **Baker** | `npm run delegate:register` | Register as delegate |
+| | `npm run baker:start` | Start baker daemon |
+| | `npm run baker:stop` | Stop baker |
+| | `npm run baker:restart` | Restart baker |
+| | `npm run baker:hard-restart` | Stop and start baker |
+| | `npm run baker:logs` | View live logs |
+| | `npm run baker:logs:tail` | View last 50 lines |
+| | `npm run baker:enable-dal` | Reconfigure baker with DAL |
+| **DAL** | `npm run dal:setup` | Complete DAL setup |
+| | `npm run dal:init` | Initialize DAL config |
+| | `npm run dal:start` | Start DAL node |
+| | `npm run dal:stop` | Stop DAL node |
+| | `npm run dal:restart` | Restart DAL node |
 | | `npm run dal:verify` | Verify DAL working |
 | | `npm run dal:status` | Check DAL health |
-| **Help** | `npm run help` | Show all commands |
+| | `npm run dal:logs` | View live logs |
+| | `npm run dal:logs:tail` | View last 50 lines |
+| **Status** | `npm run status:all` | Show all services status |
+| | `npm run status:containers` | List Docker containers |
+| | `npm run status:sleep` | Check Mac sleep mode |
+| **Monitoring** | `npm run monitoring:start` | Start Grafana/Prometheus |
+| | `npm run monitoring:stop` | Stop monitoring stack |
+| **Utility** | `npm run restart:all` | Restart all services |
+| | `npm run prevent-sleep` | Prevent Mac sleep |
+| | `npm run help` | Show help message |
 
 **Full workflow:** setup → snapshot → node → account → stake → delegate → baker → (optional: DAL)
+
+**Note:** Some internal commands (`node:init`, `node:identity`, `node:version`, `env`) are called automatically by other scripts and rarely need to be run directly.
 
 ## Quick Health Check
 
